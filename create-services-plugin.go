@@ -70,8 +70,16 @@ func (c *BasicPlugin) Run(cliConnection plugin.CliConnection, args []string) {
 		}
 	}
 
+	fmt.Printf("Performing a CF Push with arguments %s\n", strings.Join(args[1:], " "))
+
+	newArgs := append([]string{"push"}, args[1:]...)
 	// 3. Perform the cf push
-	cliConnection.CliCommand("push", strings.Join(args[1:], " "))
+	output, err := cliConnection.CliCommand(newArgs...)
+	fmt.Printf("%s\n", output)
+
+	if err != nil {
+		fmt.Printf("ERROR while pushing: %s\n", err)
+	}
 }
 
 func (d *BasicPlugin) createServices() error {
@@ -111,7 +119,7 @@ func (d *BasicPlugin) createService(name, broker, plan, JSONParam string) error 
 	for _, svc := range s {
 		if svc.Name == name {
 
-			fmt.Printf("%s already exists. Stopping service creation", name)
+			fmt.Printf("%s already exists. Stopping service creation\n", name)
 			/* FIXME: check configuration */
 			return nil
 		}

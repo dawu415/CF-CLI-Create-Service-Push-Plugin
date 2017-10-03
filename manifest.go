@@ -122,13 +122,13 @@ services:
 */
 
 type Service struct {
-	ServiceName    string `yaml:"name"`
+	ServiceName    string `yaml:"instance_name"`
 	Broker         string `yaml:"brokerName"`
 	PlanName       string `yaml:"planName"`
 	JSONParameters string `yaml:"JSONParameters"`
 }
 type Manifest struct {
-	Services []Service `yaml:"services"`
+	Services []Service `yaml:"create-services"`
 }
 
 func ParseManifest(src io.Reader) (Manifest, error) {
