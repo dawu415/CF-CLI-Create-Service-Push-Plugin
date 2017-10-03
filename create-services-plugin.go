@@ -28,47 +28,50 @@ type BasicPlugin struct {
 // user facing errors). The CLI will exit 0 if the plugin exits 0 and will exit
 // 1 should the plugin exits nonzero.
 func (c *BasicPlugin) Run(cliConnection plugin.CliConnection, args []string) {
-	// Ensure that we called the command basic-plugin-command
-	/*
-		if args[0] == "csp" {
-			// We would like to create all services first.
-			// Services should be read out from services.yml file
-			// Services are created
-			// CF Push is called with the assumption that manifest.yml already exists and
-			// specifies the application-service bindings.
-
-			// 1. Read in the services.yml file
-
-			// 2. Create the services from services.yml
-
-
-
-			result, _ := cliConnection.CliCommand("push")
-			fmt.Println("Done CliCommand:", result)
-		}*/
-	// 1. Process the arguments -> Find out all CSP related arguments
-	// A CSP argument is one where the argument is prefixed with CSP
 
 	fmt.Printf("Arguments: %s\n", strings.Join(args, "**"))
 
-	// 2. If 1. did not process the serviceManifest, we assume the file is csp_service.yml
-	// 3. Perform Parsing of servicesManifest and creation of services
-	// 4. Perform the cf push
+	// 1. Find an argument of -f in the list.  This will tell us the manifest file
+	var manifestFilename string = "manifest.yml"
 
-	manifest, err := ParseManifest(os.Stdin)
-	if err != nil {
-		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
+	for i, arg := range args {
+		if arg == "-f" {
+			manifestFilename = args[i+1]
+			break
+		} else if arg == "--no-manifest" {
+			manifestFilename = ""
+			break
+		}
 	}
 
-	createServicesobject := &BasicPlugin{
-		manifest: &manifest,
-		cf:       cliConnection,
+	fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
+
+	// 2. Whatever the manifest file is, check to make sure it exists!
+	if len(manifestFilename) > 0 {
+		if _, err := os.Stat(manifestFilename); !os.IsNotExist(err) {
+			filePointer, err := os.Open(manifestFilename)
+			if err == nil {
+				manifest, err := ParseManifest(filePointer)
+				if err != nil {
+					fmt.Printf("ERROR: %s\n", err)
+					os.Exit(1)
+				}
+
+				createServicesobject := &BasicPlugin{
+					manifest: &manifest,
+					cf:       cliConnection,
+				}
+
+				createServicesobject.createServices()
+			} else {
+				fmt.Printf("ERROR: %s\n", err)
+				os.Exit(1)
+			}
+		}
 	}
 
-	createServicesobject.createServices()
-
-	cliConnection.CliCommand("push")
+	// 3. Perform the cf push
+	cliConnection.CliCommand("push", strings.Join(args[1:], " "))
 }
 
 func (d *BasicPlugin) createServices() error {
@@ -119,7 +122,7 @@ func (d *BasicPlugin) createService(name, broker, plan, JSONParam string) error 
 	if JSONParam == "" {
 		return d.run("create-service", broker, plan, name)
 	} else {
-		return d.run("create-service", broker, plan, name, JSONParam, "-c "+JSONParam)
+		return d.run("create-service", broker, plan, name, "-c", JSONParam)
 	}
 
 }
