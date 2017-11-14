@@ -1,4 +1,4 @@
-#Create-Service-Push
+# Create-Service-Push
 
 Reads in a services manifest yml file and creates the services listed and pushes 
 an application.
@@ -6,10 +6,10 @@ an application.
 This plugin extends cf push. So it will act the same way as cf push, with the exception
 that it creates the services first.
 
-#Additional Parameters
+# Additional Parameters
 
 
-#services-manifest.yml sample
+# services-manifest.yml sample
 ```
 ---
 create-services:
