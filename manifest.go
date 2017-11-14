@@ -8,10 +8,10 @@ import (
 )
 
 type Service struct {
-	ServiceName    string `yaml:"instanceName"`
-	Broker         string `yaml:"brokerName"`
-	PlanName       string `yaml:"planName"`
-	JSONParameters string `yaml:"JSONParameters"`
+	ServiceName    string `yaml:"name"`
+	Broker         string `yaml:"broker"`
+	PlanName       string `yaml:"plan"`
+	JSONParameters string `yaml:"parameters"`
 }
 type Manifest struct {
 	Services []Service `yaml:"create-services"`

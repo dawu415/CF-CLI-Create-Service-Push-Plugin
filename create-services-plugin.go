@@ -29,25 +29,30 @@ type CreateServicePush struct {
 // 1 should the plugin exits nonzero.
 func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []string) {
 
-	fmt.Printf("Arguments: %s\n", strings.Join(args, "**"))
-
-	// 1. Find an argument of -f in the list.  This will tell us the manifest file
-	var manifestFilename = "manifest.yml"
+	// 1. Find an argument of --service-manifest in the list.  This will tell us the manifest file
+	var manifestFilename = "services-manifest.yml"
+	var pushApplication = true
 
 	for i, arg := range args {
-		if arg == "-f" {
+		if arg == "--service-manifest" {
 			manifestFilename = args[i+1]
 			break
-		} else if arg == "--no-manifest" {
+		} else if arg == "--no-service-manifest" {
 			manifestFilename = ""
 			break
 		}
 	}
-
-	fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
+	// Also check for other specific flags
+	for _, arg := range args {
+		if arg == "--no-push" {
+			pushApplication = false
+			break
+		}
+	}
 
 	// 2. Whatever the manifest file is, check to make sure it exists!
 	if len(manifestFilename) > 0 {
+		fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
 		if _, err := os.Stat(manifestFilename); !os.IsNotExist(err) {
 			filePointer, err := os.Open(manifestFilename)
 			if err == nil {
@@ -61,24 +66,28 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 					manifest: &manifest,
 					cf:       cliConnection,
 				}
-
 				createServicesobject.createServices()
 			} else {
 				fmt.Printf("ERROR: %s\n", err)
 				os.Exit(1)
 			}
+		} else {
+			fmt.Printf("ERROR: %s\n", err)
+			os.Exit(1)
 		}
 	}
 
-	fmt.Printf("Performing a CF Push with arguments %s\n", strings.Join(args[1:], " "))
+	if pushApplication {
+		fmt.Printf("Performing a CF Push with arguments %s\n", strings.Join(args[1:], " "))
 
-	newArgs := append([]string{"push"}, args[1:]...)
-	// 3. Perform the cf push
-	output, err := cliConnection.CliCommand(newArgs...)
-	fmt.Printf("%s\n", output)
+		newArgs := append([]string{"push"}, args[1:]...)
+		// 3. Perform the cf push
+		output, err := cliConnection.CliCommand(newArgs...)
+		fmt.Printf("%s\n", output)
 
-	if err != nil {
-		fmt.Printf("ERROR while pushing: %s\n", err)
+		if err != nil {
+			fmt.Printf("ERROR while pushing: %s\n", err)
+		}
 	}
 }
 
@@ -97,9 +106,6 @@ func (c *CreateServicePush) run(args ...string) error {
 	if os.Getenv("DEBUG") != "" {
 		fmt.Printf(">> %s\n", strings.Join(args, " "))
 	}
-	if os.Getenv("DRYRUN") != "" {
-		return nil
-	}
 
 	fmt.Printf("Now Running CLI Command: %s\n", strings.Join(args, " "))
 	_, err := c.cf.CliCommand(args...)
@@ -112,18 +118,14 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 		return err
 	}
 
-	fmt.Printf("Checking existence of services\n")
-
 	for _, svc := range s {
 		if svc.Name == name {
-
-			fmt.Printf("%s already exists. Stopping service creation\n", name)
-			/* FIXME: check configuration */
+			fmt.Printf("%s already exists.\n", name)
 			return nil
 		}
 	}
 
-	fmt.Printf("Creating Service: %s\n", name)
+	fmt.Printf("%s will now be created.\n", name)
 
 	var result error
 	if JSONParam == "" {
@@ -149,7 +151,7 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 // to the user in the core commands `cf help`, `cf`, or `cf -h`.
 func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "MyCreateServicePush",
+		Name: "CreateServicePush",
 		Version: plugin.VersionType{
 			Major: 1,
 			Minor: 0,
@@ -163,12 +165,17 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "create-service-push",
-				HelpText: "Works in the same manner as cf push, except that it will create services defined in a service manifest",
+				HelpText: "Works in the same manner as cf push, except that it will create services defined in a services-manifest.yml file first before performing a cf push.",
 
 				// UsageDetails is optional
 				// It is used to show help of usage of each command
 				UsageDetails: plugin.Usage{
 					Usage: "create-service-push\n   cf create-service-push",
+					Options: map[string]string{
+						"--service-manifest <MANIFEST_FILE>": "Specify the fullpath and filename of the services creation manifest.  Defaults to services-manifest.yml.",
+						"--no-service-manifest":              "Specifies that there is no service creation manifest",
+						"--no-push":                          "Create the services but do not push the application",
+					},
 				},
 			},
 		},
