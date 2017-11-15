@@ -29,6 +29,10 @@ type CreateServicePush struct {
 // 1 should the plugin exits nonzero.
 func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []string) {
 
+	if args[0] != "create-service-push" {
+		return
+	}
+
 	// 1. Find an argument of --service-manifest in the list.  This will tell us the manifest file
 	var manifestFilename = "services-manifest.yml"
 	var pushApplication = true
@@ -52,8 +56,8 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 
 	// 2. Whatever the manifest file is, check to make sure it exists!
 	if len(manifestFilename) > 0 {
-		fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
 		if _, err := os.Stat(manifestFilename); !os.IsNotExist(err) {
+			fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
 			filePointer, err := os.Open(manifestFilename)
 			if err == nil {
 				manifest, err := ParseManifest(filePointer)
@@ -68,11 +72,11 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 				}
 				createServicesobject.createServices()
 			} else {
-				fmt.Printf("ERROR: %s\n", err)
+				fmt.Printf("ERROR: Unable to open %s.\n", manifestFilename)
 				os.Exit(1)
 			}
 		} else {
-			fmt.Printf("ERROR: %s\n", err)
+			fmt.Printf("ERROR: The file %s was not found.\n", manifestFilename)
 			os.Exit(1)
 		}
 	}
