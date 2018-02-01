@@ -99,7 +99,7 @@ func (c *CreateServicePush) createServices() error {
 
 	for _, serviceObject := range c.manifest.Services {
 		if err := c.createService(serviceObject.ServiceName, serviceObject.Broker, serviceObject.PlanName, serviceObject.JSONParameters); err != nil {
-			fmt.Printf("Create Service Error: %+v ", err)
+			fmt.Printf("Create Service Error: %+v \n", err)
 		}
 	}
 
@@ -138,7 +138,33 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 		result = c.run("create-service", broker, plan, name, "-c", JSONParam)
 	}
 
-	return result
+	if result != nil {
+		return result
+	}
+
+	pb := NewProgressSpinner(os.Stdout)
+	for {
+		service, err := c.cf.GetService(name)
+		if err != nil {
+			return err
+		}
+
+		pb.Next(service.LastOperation.Description)
+
+		if service.LastOperation.State == "succeeded" {
+			break
+		}
+		if service.LastOperation.State == "failed" {
+			return fmt.Errorf(
+				"error %s [status: %s]",
+				service.LastOperation.Description,
+				service.LastOperation.State,
+			)
+		}
+
+	}
+
+	return nil
 }
 
 // GetMetadata must be implemented as part of the plugin interface
