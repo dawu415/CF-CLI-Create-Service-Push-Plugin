@@ -153,8 +153,7 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 
 		if service.LastOperation.State == "succeeded" {
 			break
-		}
-		if service.LastOperation.State == "failed" {
+		} else if service.LastOperation.State == "failed" {
 			return fmt.Errorf(
 				"error %s [status: %s]",
 				service.LastOperation.Description,

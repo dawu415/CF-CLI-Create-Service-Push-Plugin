@@ -8,12 +8,11 @@ import (
 type ProgressSpinner struct {
 	state                string
 	loadingMessage       string
-	updateLoadingMessage bool
 	writer               io.Writer
 }
 
 func NewProgressSpinner(writer io.Writer) *ProgressSpinner {
-	ipb := &ProgressSpinner{"|", "", true,writer}
+	ipb := &ProgressSpinner{"|", "", writer}
 	return ipb
 }
 func (ps *ProgressSpinner) Next(loadingMessage string) {
@@ -34,14 +33,6 @@ func (ps *ProgressSpinner) Next(loadingMessage string) {
 	ps.state = nextState
 	if loadingMessage != ps.loadingMessage {
 		ps.loadingMessage = loadingMessage
-		ps.updateLoadingMessage = true
-	} else {
-		ps.updateLoadingMessage = false
-	}
-	ps.write()
-}
-func (ps *ProgressSpinner) write() {
-	if ps.updateLoadingMessage {
 		fmt.Fprint(ps.writer, ps.loadingMessage+"\n")
 	}
 	fmt.Fprint(ps.writer, ps.state+"\r")
