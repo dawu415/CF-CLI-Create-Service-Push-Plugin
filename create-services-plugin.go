@@ -8,7 +8,7 @@ import (
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-// CreateServicePush is the struct implementing the interface defined by the core CLI. It can
+// Create-Service-Push is the struct implementing the interface defined by the core CLI. It can
 // be found at  "code.cloudfoundry.org/cli/plugin/plugin.go"
 type CreateServicePush struct {
 	manifest *Manifest
@@ -180,7 +180,7 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 // to the user in the core commands `cf help`, `cf`, or `cf -h`.
 func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 	return plugin.PluginMetadata{
-		Name: "CreateServicePush",
+		Name: "Create-Service-Push",
 		Version: plugin.VersionType{
 			Major: 1,
 			Minor: 0,
