@@ -1,14 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
 )
 
-// Create-Service-Push is the struct implementing the interface defined by the core CLI. It can
+// CreateServicePush is the struct implementing the interface defined by the core CLI. It can
 // be found at  "code.cloudfoundry.org/cli/plugin/plugin.go"
 type CreateServicePush struct {
 	manifest *Manifest
@@ -70,7 +72,9 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 					manifest: &manifest,
 					cf:       cliConnection,
 				}
-				createServicesobject.createServices()
+				if err := createServicesobject.createServices(); err != nil {
+					os.Exit(1)
+				}
 			} else {
 				fmt.Printf("ERROR: Unable to open %s.\n", manifestFilename)
 				os.Exit(1)
@@ -96,14 +100,35 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 }
 
 func (c *CreateServicePush) createServices() error {
-
+	var err error
+	// Detect the type of service and then go and create them.
+	// credentials: User provided credentials service
+	// drain: User provided log drain service
+	// route: User provided route service
+	// brokered: Brokered service.  The type field can be blank to specify this as well.
 	for _, serviceObject := range c.manifest.Services {
-		if err := c.createService(serviceObject.ServiceName, serviceObject.Broker, serviceObject.PlanName, serviceObject.JSONParameters); err != nil {
+		if serviceObject.Type == "credentials" {
+			err = c.createUserProvidedCredentialsService(serviceObject.ServiceName, serviceObject.Credentials)
+		} else if serviceObject.Type == "drain" {
+			err = c.createUserProvidedLogDrainService(serviceObject.ServiceName, serviceObject.Url)
+		} else if serviceObject.Type == "route" {
+			err = c.createUserProvidedRouteService(serviceObject.ServiceName, serviceObject.Url)
+		} else {
+			if serviceObject.Type == "brokered" || serviceObject.Type == "" {
+				err = c.createService(serviceObject.ServiceName, serviceObject.Broker, serviceObject.PlanName, serviceObject.JSONParameters)
+			} else {
+				err = fmt.Errorf("Service Type: %s unsupported", serviceObject.Type)
+			}
+		}
+
+		// If we encounter any errors, quit immediately, so errors are caught early.
+		if err != nil {
 			fmt.Printf("Create Service Error: %+v \n", err)
+			break
 		}
 	}
 
-	return nil
+	return err
 }
 
 func (c *CreateServicePush) run(args ...string) error {
@@ -116,7 +141,8 @@ func (c *CreateServicePush) run(args ...string) error {
 	return err
 }
 
-func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) error {
+func (c *CreateServicePush) createUserProvidedCredentialsService(name string, credentials map[string]string) error {
+	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
 		return err
@@ -124,22 +150,90 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 
 	for _, svc := range s {
 		if svc.Name == name {
-			fmt.Printf("%s already exists.\n", name)
+			fmt.Print("already exists...skipping creation\n")
 			return nil
 		}
 	}
 
-	fmt.Printf("%s will now be created.\n", name)
+	fmt.Print("will now be created as a user provided credential service.\n")
+	credentialsJSON, _ := json.Marshal(credentials)
 
-	var result error
-	if JSONParam == "" {
-		result = c.run("create-service", broker, plan, name)
-	} else {
-		result = c.run("create-service", broker, plan, name, "-c", JSONParam)
+	return c.run("cups", name, "-p", string(credentialsJSON))
+}
+
+func (c *CreateServicePush) createUserProvidedRouteService(name, urlString string) error {
+	fmt.Printf("%s - ", name)
+	s, err := c.cf.GetServices()
+	if err != nil {
+		return err
 	}
 
-	if result != nil {
-		return result
+	for _, svc := range s {
+		if svc.Name == name {
+			fmt.Print("already exists...skipping creation\n")
+			return nil
+		}
+	}
+
+	// Check to ensure that the url begins with HTTPS because that is the only scheme supported.
+	urlStruct, err := url.Parse(urlString)
+
+	if err != nil {
+		return err
+	}
+
+	if strings.ToLower(urlStruct.Scheme) != "https" {
+		return fmt.Errorf("route scheme not specified or unsupported. User provided route service only supports https")
+	}
+
+	fmt.Print("will now be created as a user provided route service.\n")
+
+	return c.run("cups", name, "-r", urlString)
+}
+
+func (c *CreateServicePush) createUserProvidedLogDrainService(name, urlString string) error {
+	fmt.Printf("%s - ", name)
+	s, err := c.cf.GetServices()
+	if err != nil {
+		return err
+	}
+
+	for _, svc := range s {
+		if svc.Name == name {
+			fmt.Print("already exists...skipping creation\n")
+			return nil
+		}
+	}
+
+	fmt.Print("will now be created as a user provided log drain service.\n")
+
+	return c.run("cups", name, "-l", urlString)
+}
+
+func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) error {
+	fmt.Printf("%s - ", name)
+	s, err := c.cf.GetServices()
+	if err != nil {
+		return err
+	}
+
+	for _, svc := range s {
+		if svc.Name == name {
+			fmt.Print("already exists...skipping creation\n")
+			return nil
+		}
+	}
+
+	fmt.Printf("will now be created as a brokered service.\n")
+
+	if JSONParam == "" {
+		err = c.run("create-service", broker, plan, name)
+	} else {
+		err = c.run("create-service", broker, plan, name, "-c", JSONParam)
+	}
+
+	if err != nil {
+		return err
 	}
 
 	pb := NewProgressSpinner(os.Stdout)
@@ -194,6 +288,7 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "create-service-push",
+				Alias:    "csp",
 				HelpText: "Works in the same manner as cf push, except that it will create services defined in a services-manifest.yml file first before performing a cf push.",
 
 				// UsageDetails is optional
