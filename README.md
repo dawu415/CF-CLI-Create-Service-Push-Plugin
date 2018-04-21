@@ -40,12 +40,12 @@ is a standard brokered service from the market place.
 
 `credentials`: A user provided service, holding credentials, that is used for credentials and connection strings etc.  When this type is specified, a `credentials` field, along with arbitary number and type of parameters, is expected and must be provided.
 
-`route`: A user provided route service. When this is specified, the field, 'url' with https schema must be provided.
+`route`: A user provided route service. When this is specified, the field, `url` with *https* schema must be provided.
 
-`drain`: A user provided log drain service. When this is specified, the field, 'url' must be provided.
+`drain`: A user provided log drain service. When this is specified, the field, `url` must be provided.
 
 
-Sample service-manifest.yml
+Sample service-manifest.yml showing support for brokered and user provided services of all types. 
 ```
 ---
 create-services:
