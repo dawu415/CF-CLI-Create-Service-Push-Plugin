@@ -38,7 +38,7 @@ is a standard brokered service from the market place.
 
 `brokered`:  A marketplace service broker
 
-`credentials`: A user provided service, holding credentials, that is used for credentials and connection strings etc.  When this type is specified, a 'credentials' field, along with the parameters, is expected and must be provided.
+`credentials`: A user provided service, holding credentials, that is used for credentials and connection strings etc.  When this type is specified, a `credentials` field, along with arbitary number and type of parameters, is expected and must be provided.
 
 `route`: A user provided route service. When this is specified, the field, 'url' with https schema must be provided.
 
@@ -56,6 +56,7 @@ create-services:
 - name:   "Credentials-UPS"
   type:   "credentials"
   credentials:
+    host: "https://abc.mydatabase.com/abcd"
     username: david
     password: 12.23@123password
     
