@@ -33,33 +33,61 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 
 	if args[0] != "create-service-push" {
 		return
+	} else {
+		args = args[1:] // Remove the create-service-push
 	}
 
-	// 1. Find an argument of --service-manifest in the list.  This will tell us the manifest file
+	// 1. Process the input arguments specific to create-service-push
 	var manifestFilename = "services-manifest.yml"
-	var pushApplication = true
+	processedFlags := map[string]bool{}
+	remainingArgs := []string{}
 
-	for i, arg := range args {
-		if arg == "--service-manifest" {
-			manifestFilename = args[i+1]
-			break
-		} else if arg == "--no-service-manifest" {
+	for argIdx := 0; argIdx < len(args); argIdx++ {
+		switch args[argIdx] {
+		case "--service-manifest": // Specify the service manifest to use
+			if (argIdx + 1) < len(args) { // Ensure service-manifest has a filename parameter
+				if processedFlags["--no-service-manifest"] {
+					fmt.Printf("--service-manifest cannot be used in conjunction with --no-service-manifest\n")
+					os.Exit(1)
+				}
+
+				manifestFilename = args[argIdx+1]
+
+				if strings.HasPrefix(manifestFilename, "--") {
+					fmt.Printf("--service-manifest requires a filename argument. \"%s\" was found instead\n", manifestFilename)
+					os.Exit(1)
+				}
+				processedFlags[args[argIdx]] = true
+				argIdx++ // Increment the index because we want to not process the 'filename' on the next loop
+			} else {
+				fmt.Printf("--service-manifest is missing a manifest filename argument\n")
+				os.Exit(1)
+			}
+		case "--no-service-manifest": // Specify that no service manifests exists and so don't process any service creations, just push the app, if no-push was not specified.
+			if processedFlags["--service-manifest"] {
+				fmt.Printf("--no-service-manifest cannot be used in conjunction with --service-manifest\n")
+				os.Exit(1)
+			}
+
 			manifestFilename = ""
-			break
+			processedFlags[args[argIdx]] = true
+		case "--no-push": // Specify that the services should be created but the app should not be pushed.
+			processedFlags[args[argIdx]] = true
+			continue
+
+		default: // The parameter was not recognized, so we'll just push it into the remaining args list
+			remainingArgs = append(remainingArgs, args[argIdx])
 		}
 	}
-	// Also check for other specific flags
-	for _, arg := range args {
-		if arg == "--no-push" {
-			pushApplication = false
-			break
-		}
-	}
+
+	// args should now only contain arguments that are not specific to create-service-push
+	args = remainingArgs
+	// End of arg processing
 
 	// 2. Whatever the manifest file is, check to make sure it exists!
 	if len(manifestFilename) > 0 {
 		if _, err := os.Stat(manifestFilename); !os.IsNotExist(err) {
-			fmt.Printf("Found ManifestFile: %s\n", manifestFilename)
+			fmt.Printf("Found Service Manifest File: %s\n", manifestFilename)
 			filePointer, err := os.Open(manifestFilename)
 			if err == nil {
 				manifest, err := ParseManifest(filePointer)
@@ -85,10 +113,14 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 		}
 	}
 
-	if pushApplication {
-		fmt.Printf("Performing a CF Push with arguments %s\n", strings.Join(args[1:], " "))
+	// If no-push was specified, don't push the application. Otherwise, push the application
+	// to CF.
+	if _, ok := processedFlags["--no-push"]; ok {
+		fmt.Printf("--no-push applied: Your application will not be pushed to CF ...\n")
+	} else {
+		fmt.Printf("Performing a CF Push with arguments [ %s ] ...\n", strings.Join(args, " "))
 
-		newArgs := append([]string{"push"}, args[1:]...)
+		newArgs := append([]string{"push"}, args...)
 		// 3. Perform the cf push
 		output, err := cliConnection.CliCommand(newArgs...)
 		fmt.Printf("%s\n", output)
@@ -277,7 +309,7 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Name: "Create-Service-Push",
 		Version: plugin.VersionType{
 			Major: 1,
-			Minor: 0,
+			Minor: 1,
 			Build: 1,
 		},
 		MinCliVersion: plugin.VersionType{
