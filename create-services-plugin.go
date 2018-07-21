@@ -33,9 +33,9 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 
 	if args[0] != "create-service-push" {
 		return
-	} else {
-		args = args[1:] // Remove the create-service-push
 	}
+
+	args = args[1:] // Remove the create-service-push
 
 	// 1. Process the input arguments specific to create-service-push
 	var manifestFilename = "services-manifest.yml"
@@ -147,7 +147,12 @@ func (c *CreateServicePush) createServices() error {
 			err = c.createUserProvidedRouteService(serviceObject.ServiceName, serviceObject.Url)
 		} else {
 			if serviceObject.Type == "brokered" || serviceObject.Type == "" {
-				err = c.createService(serviceObject.ServiceName, serviceObject.Broker, serviceObject.PlanName, serviceObject.JSONParameters)
+				err = c.createService(serviceObject.ServiceName,
+					serviceObject.Broker,
+					serviceObject.PlanName,
+					serviceObject.JSONParameters,
+					serviceObject.Tags,
+					serviceObject.updateSIParamsAndTags)
 			} else {
 				err = fmt.Errorf("Service Type: %s unsupported", serviceObject.Type)
 			}
@@ -242,7 +247,7 @@ func (c *CreateServicePush) createUserProvidedLogDrainService(name, urlString st
 	return c.run("cups", name, "-l", urlString)
 }
 
-func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) error {
+func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags string, updateSIParamsAndTags bool) error {
 	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
@@ -251,17 +256,31 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam string) 
 
 	for _, svc := range s {
 		if svc.Name == name {
-			fmt.Print("already exists...skipping creation\n")
-			return nil
+			if !updateSIParamsAndTags {
+				fmt.Print("already exists...skipping creation\n")
+				return nil
+			}
 		}
 	}
 
 	fmt.Printf("will now be created as a brokered service.\n")
 
-	if JSONParam == "" {
-		err = c.run("create-service", broker, plan, name)
+	// Process the parameters
+	optionalArgs := []string{}
+	if tags != "" {
+		optionalArgs = append(optionalArgs, "-t")
+		optionalArgs = append(optionalArgs, tags)
+	}
+
+	if JSONParam != "" {
+		optionalArgs = append(optionalArgs, "-c")
+		optionalArgs = append(optionalArgs, JSONParam)
+	}
+
+	if updateSIParamsAndTags {
+		err = c.run(append([]string{"update-service", name}, optionalArgs...)...)
 	} else {
-		err = c.run("create-service", broker, plan, name, "-c", JSONParam)
+		err = c.run(append([]string{"create-service", broker, plan, name}, optionalArgs...)...)
 	}
 
 	if err != nil {
@@ -309,8 +328,8 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Name: "Create-Service-Push",
 		Version: plugin.VersionType{
 			Major: 1,
-			Minor: 1,
-			Build: 1,
+			Minor: 2,
+			Build: 0,
 		},
 		MinCliVersion: plugin.VersionType{
 			Major: 6,
