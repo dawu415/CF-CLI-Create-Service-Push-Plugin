@@ -140,11 +140,23 @@ func (c *CreateServicePush) createServices() error {
 	// brokered: Brokered service.  The type field can be blank to specify this as well.
 	for _, serviceObject := range c.manifest.Services {
 		if serviceObject.Type == "credentials" {
-			err = c.createUserProvidedCredentialsService(serviceObject.ServiceName, serviceObject.Credentials)
+			err = c.createUserProvidedCredentialsService(
+				serviceObject.ServiceName,
+				serviceObject.Credentials,
+				serviceObject.Tags,
+				serviceObject.updateService)
 		} else if serviceObject.Type == "drain" {
-			err = c.createUserProvidedLogDrainService(serviceObject.ServiceName, serviceObject.Url)
+			err = c.createUserProvidedLogDrainService(
+				serviceObject.ServiceName,
+				serviceObject.Url,
+				serviceObject.Tags,
+				serviceObject.updateService)
 		} else if serviceObject.Type == "route" {
-			err = c.createUserProvidedRouteService(serviceObject.ServiceName, serviceObject.Url)
+			err = c.createUserProvidedRouteService(
+				serviceObject.ServiceName,
+				serviceObject.Url,
+				serviceObject.Tags,
+				serviceObject.updateService)
 		} else {
 			if serviceObject.Type == "brokered" || serviceObject.Type == "" {
 				err = c.createService(serviceObject.ServiceName,
@@ -152,7 +164,7 @@ func (c *CreateServicePush) createServices() error {
 					serviceObject.PlanName,
 					serviceObject.JSONParameters,
 					serviceObject.Tags,
-					serviceObject.updateSIParamsAndTags)
+					serviceObject.updateService)
 			} else {
 				err = fmt.Errorf("Service Type: %s unsupported", serviceObject.Type)
 			}
@@ -178,7 +190,7 @@ func (c *CreateServicePush) run(args ...string) error {
 	return err
 }
 
-func (c *CreateServicePush) createUserProvidedCredentialsService(name string, credentials map[string]string) error {
+func (c *CreateServicePush) createUserProvidedCredentialsService(name string, credentials map[string]string, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
@@ -186,19 +198,26 @@ func (c *CreateServicePush) createUserProvidedCredentialsService(name string, cr
 	}
 
 	for _, svc := range s {
-		if svc.Name == name {
+		if svc.Name == name && !updateService {
 			fmt.Print("already exists...skipping creation\n")
 			return nil
 		}
 	}
 
-	fmt.Print("will now be created as a user provided credential service.\n")
 	credentialsJSON, _ := json.Marshal(credentials)
 
-	return c.run("cups", name, "-p", string(credentialsJSON))
+	if updateService {
+		fmt.Print("user provided credential service will now be updated.\n")
+		err = c.run("uups", name, "-p", string(credentialsJSON), "-t", tags)
+	} else {
+		fmt.Print("will now be created as a user provided credential service.\n")
+		err = c.run("cups", name, "-p", string(credentialsJSON), "-t", tags)
+	}
+
+	return err
 }
 
-func (c *CreateServicePush) createUserProvidedRouteService(name, urlString string) error {
+func (c *CreateServicePush) createUserProvidedRouteService(name, urlString, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
@@ -206,7 +225,7 @@ func (c *CreateServicePush) createUserProvidedRouteService(name, urlString strin
 	}
 
 	for _, svc := range s {
-		if svc.Name == name {
+		if svc.Name == name && !updateService {
 			fmt.Print("already exists...skipping creation\n")
 			return nil
 		}
@@ -223,12 +242,18 @@ func (c *CreateServicePush) createUserProvidedRouteService(name, urlString strin
 		return fmt.Errorf("route scheme not specified or unsupported. User provided route service only supports https")
 	}
 
-	fmt.Print("will now be created as a user provided route service.\n")
+	if updateService {
+		fmt.Print("user provided route service will now be updated.\n")
+		err = c.run("uups", name, "-r", urlString, "-t", tags)
+	} else {
+		fmt.Print("will now be created as a user provided route service.\n")
+		err = c.run("cups", name, "-r", urlString, "-t", tags)
+	}
 
-	return c.run("cups", name, "-r", urlString)
+	return err
 }
 
-func (c *CreateServicePush) createUserProvidedLogDrainService(name, urlString string) error {
+func (c *CreateServicePush) createUserProvidedLogDrainService(name, urlString, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
@@ -236,18 +261,24 @@ func (c *CreateServicePush) createUserProvidedLogDrainService(name, urlString st
 	}
 
 	for _, svc := range s {
-		if svc.Name == name {
+		if svc.Name == name && !updateService {
 			fmt.Print("already exists...skipping creation\n")
 			return nil
 		}
 	}
 
-	fmt.Print("will now be created as a user provided log drain service.\n")
+	if updateService {
+		fmt.Print("user provided log drain service will now be updated.\n")
+		err = c.run("uups", name, "-l", urlString, "-t", tags)
+	} else {
+		fmt.Print("will now be created as a user provided log drain service.\n")
+		err = c.run("cups", name, "-l", urlString, "-t", tags)
+	}
 
-	return c.run("cups", name, "-l", urlString)
+	return err
 }
 
-func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags string, updateSIParamsAndTags bool) error {
+func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
 	s, err := c.cf.GetServices()
 	if err != nil {
@@ -255,15 +286,11 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags st
 	}
 
 	for _, svc := range s {
-		if svc.Name == name {
-			if !updateSIParamsAndTags {
-				fmt.Print("already exists...skipping creation\n")
-				return nil
-			}
+		if svc.Name == name && !updateService {
+			fmt.Print("already exists...skipping creation\n")
+			return nil
 		}
 	}
-
-	fmt.Printf("will now be created as a brokered service.\n")
 
 	// Process the parameters
 	optionalArgs := []string{}
@@ -277,9 +304,11 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags st
 		optionalArgs = append(optionalArgs, JSONParam)
 	}
 
-	if updateSIParamsAndTags {
+	if updateService {
+		fmt.Printf("broker service will now be updated.\n")
 		err = c.run(append([]string{"update-service", name}, optionalArgs...)...)
 	} else {
+		fmt.Printf("will now be created as a brokered service.\n")
 		err = c.run(append([]string{"create-service", broker, plan, name}, optionalArgs...)...)
 	}
 
