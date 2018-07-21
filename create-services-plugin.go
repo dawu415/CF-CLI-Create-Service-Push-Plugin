@@ -231,7 +231,7 @@ func (c *CreateServicePush) createUserProvidedRouteService(name, urlString, tags
 		}
 	}
 
-	// Check to ensure that the url begins with HTTPS because that is the only scheme supported.
+	// Check to ensure that the url begins with HTTPS because that is the only scheme supported for now.
 	urlStruct, err := url.Parse(urlString)
 
 	if err != nil {
@@ -292,7 +292,7 @@ func (c *CreateServicePush) createService(name, broker, plan, JSONParam, tags st
 		}
 	}
 
-	// Process the parameters
+	// Collect the parameters
 	optionalArgs := []string{}
 	if tags != "" {
 		optionalArgs = append(optionalArgs, "-t")
