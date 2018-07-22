@@ -46,7 +46,14 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 	// If we are specified to process a service manifest (by default), then
 	// read in the service manifest and instantiate the services from that
 	if !CSPArguments.DoNotCreateServices {
-		manifest, err := serviceManifest.ParseFromFilename(CSPArguments.ServiceManifestFilename)
+		parser, err := serviceManifest.NewParser(CSPArguments.ServiceManifestFilename)
+
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err)
+			os.Exit(1)
+		}
+
+		manifest, err := parser.Parse()
 
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)

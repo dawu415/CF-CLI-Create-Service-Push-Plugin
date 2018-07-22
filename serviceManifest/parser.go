@@ -2,34 +2,36 @@ package serviceManifest
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 )
 
-// ParseFromFilename takes in a filename and outputs a Manifest
-func ParseFromFilename(filename string) (ServiceManifest, error) {
+// Parser holds a reader that will provide the input data to be Parsed
+type Parser struct {
+	Reader io.Reader
+}
 
-	var manifest ServiceManifest
+// NewParser returns a Parser struct with a reader
+func NewParser(filename string) (*Parser, error) {
 
+	var reader io.Reader
+	var err error
 	if _, err := os.Stat(filename); !os.IsNotExist(err) {
 		fmt.Printf("Found Service Manifest File: %s\n", filename)
-		filePointer, err := os.Open(filename)
-		if err == nil {
-			bytes, err := ioutil.ReadAll(filePointer)
-			if err != nil {
-				return manifest, err
-			}
-
-			manifest, err := ParseManifest(bytes)
-			if err != nil {
-				return manifest, err
-			}
-		} else {
-			return manifest, fmt.Errorf("Unable to open %s", filename)
+		reader, err = os.Open(filename)
+		if err != nil {
+			err = fmt.Errorf("Unable to open %s because %s", filename, err)
 		}
 	} else {
-		return manifest, fmt.Errorf("The file %s was not found", filename)
+		err = fmt.Errorf("The file %s was not found", filename)
 	}
 
-	return manifest, nil
+	return &Parser{
+		Reader: reader,
+	}, err
+}
+
+// Parse outputs a Service Manifest struct
+func (p *Parser) Parse() (ServiceManifest, error) {
+	return ParseManifest(p.Reader)
 }

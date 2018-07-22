@@ -1,6 +1,9 @@
 package serviceManifest
 
 import (
+	"io"
+	"io/ioutil"
+
 	yaml "gopkg.in/yaml.v2"
 )
 
@@ -23,9 +26,14 @@ type ServiceManifest struct {
 }
 
 // ParseManifest parses a manifest from a byte array
-func ParseManifest(bytes []byte) (ServiceManifest, error) {
+func ParseManifest(reader io.Reader) (ServiceManifest, error) {
 	var m ServiceManifest
 	var err error
+
+	bytes, err := ioutil.ReadAll(reader)
+	if err != nil {
+		return m, err
+	}
 
 	err = yaml.Unmarshal(bytes, &m)
 	if err != nil {
