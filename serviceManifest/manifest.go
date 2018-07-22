@@ -1,36 +1,33 @@
-package main
+package serviceManifest
 
 import (
-	"io"
-	"io/ioutil"
-
 	yaml "gopkg.in/yaml.v2"
 )
 
+// Service describes a CF service that will be instantiated
 type Service struct {
 	ServiceName    string            `yaml:"name"`
 	Type           string            `yaml:"type"` //brokered, credentials, drain, route.  "blank" == brokered
 	Broker         string            `yaml:"broker"`
 	PlanName       string            `yaml:"plan"`
-	Url            string            `yaml:"url"`
-	updateService  bool              `yaml:"updateService"` // Does not update service plan. This should be done manually.
+	URL            string            `yaml:"url"`
+	UpdateService  bool              `yaml:"updateService"` // Does not update service plan. This should be done manually.
 	Credentials    map[string]string `yaml:"credentials"`
 	Tags           string            `yaml:"tags"`
 	JSONParameters string            `yaml:"parameters"`
 }
 
-type Manifest struct {
+// ServiceManifest describes a service Manifest as an array of services
+type ServiceManifest struct {
 	Services []Service `yaml:"create-services"`
 }
 
-func ParseManifest(src io.Reader) (Manifest, error) {
-	var m Manifest
-	b, err := ioutil.ReadAll(src)
-	if err != nil {
-		return m, err
-	}
+// ParseManifest parses a manifest from a byte array
+func ParseManifest(bytes []byte) (ServiceManifest, error) {
+	var m ServiceManifest
+	var err error
 
-	err = yaml.Unmarshal(b, &m)
+	err = yaml.Unmarshal(bytes, &m)
 	if err != nil {
 		return m, err
 	}
