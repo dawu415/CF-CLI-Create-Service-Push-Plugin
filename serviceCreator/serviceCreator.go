@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -19,10 +18,10 @@ type ServiceCreator struct {
 }
 
 // CreateServices creates the services specified by manifest via a cliConnection
-func CreateServices(manifest serviceManifest.ServiceManifest, cf plugin.CliConnection) error {
+func CreateServices(manifest *serviceManifest.ServiceManifest, cf plugin.CliConnection) error {
 
 	createServicesobject := &ServiceCreator{
-		manifest:         &manifest,
+		manifest:         manifest,
 		cf:               cf,
 		progressReporter: NewProgressReporter(),
 	}
@@ -80,10 +79,6 @@ func (c *ServiceCreator) createServices() error {
 }
 
 func (c *ServiceCreator) run(args ...string) error {
-	if os.Getenv("DEBUG") != "" {
-		fmt.Printf(">> %s\n", strings.Join(args, " "))
-	}
-
 	fmt.Printf("Now Running CLI Command: %s\n", strings.Join(args, " "))
 	_, err := c.cf.CliCommand(args...)
 	return err
@@ -107,10 +102,10 @@ func (c *ServiceCreator) createUserProvidedCredentialsService(name string, crede
 
 	if updateService {
 		fmt.Print("user provided credential service will now be updated.\n")
-		err = c.run("uups", name, "-p", string(credentialsJSON), "-t", tags)
+		err = c.run("uups", name, "-p", string(credentialsJSON), "-t", fmt.Sprintf("\"%s\"", tags))
 	} else {
 		fmt.Print("will now be created as a user provided credential service.\n")
-		err = c.run("cups", name, "-p", string(credentialsJSON), "-t", tags)
+		err = c.run("cups", name, "-p", string(credentialsJSON), "-t", fmt.Sprintf("\"%s\"", tags))
 	}
 
 	return err
@@ -143,10 +138,10 @@ func (c *ServiceCreator) createUserProvidedRouteService(name, urlString, tags st
 
 	if updateService {
 		fmt.Print("user provided route service will now be updated.\n")
-		err = c.run("uups", name, "-r", urlString, "-t", tags)
+		err = c.run("uups", name, "-r", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
 	} else {
 		fmt.Print("will now be created as a user provided route service.\n")
-		err = c.run("cups", name, "-r", urlString, "-t", tags)
+		err = c.run("cups", name, "-r", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
 	}
 
 	return err
@@ -168,10 +163,10 @@ func (c *ServiceCreator) createUserProvidedLogDrainService(name, urlString, tags
 
 	if updateService {
 		fmt.Print("user provided log drain service will now be updated.\n")
-		err = c.run("uups", name, "-l", urlString, "-t", tags)
+		err = c.run("uups", name, "-l", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
 	} else {
 		fmt.Print("will now be created as a user provided log drain service.\n")
-		err = c.run("cups", name, "-l", urlString, "-t", tags)
+		err = c.run("cups", name, "-l", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
 	}
 
 	return err
@@ -195,12 +190,12 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 	optionalArgs := []string{}
 	if tags != "" {
 		optionalArgs = append(optionalArgs, "-t")
-		optionalArgs = append(optionalArgs, tags)
+		optionalArgs = append(optionalArgs, fmt.Sprintf("\"%s\"", tags))
 	}
 
 	if JSONParam != "" {
 		optionalArgs = append(optionalArgs, "-c")
-		optionalArgs = append(optionalArgs, JSONParam)
+		optionalArgs = append(optionalArgs, fmt.Sprintf("'%s'", JSONParam))
 	}
 
 	if updateService {

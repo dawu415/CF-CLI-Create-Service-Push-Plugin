@@ -14,6 +14,8 @@ import (
 // CreateServicePush is the struct implementing the interface defined by the core CLI. It can
 // be found at  "code.cloudfoundry.org/cli/plugin/plugin.go"
 type CreateServicePush struct {
+	Parser        *serviceManifest.ParserInterface
+	ArgsProcessor *cspArguments.Interface
 }
 
 // Create instantiates a new CreateServicePush struct and returns it as a pointer
@@ -36,7 +38,7 @@ func Create() *CreateServicePush {
 func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []string) {
 
 	// Process the input arguments
-	CSPArguments, err := cspArguments.Process(args)
+	CSPArguments, err := (*c.ArgsProcessor).Process(args)
 
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
@@ -46,7 +48,7 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 	// If we are specified to process a service manifest (by default), then
 	// read in the service manifest and instantiate the services from that
 	if !CSPArguments.DoNotCreateServices {
-		parser, err := serviceManifest.NewParser(CSPArguments.ServiceManifestFilename)
+		parser, err := c.Parser.CreateParser(CSPArguments.ServiceManifestFilename)
 
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
