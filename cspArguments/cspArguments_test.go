@@ -31,6 +31,9 @@ var _ = Describe("CspArguments", func() {
 
 		_, err = cspArgs.Process([]string{"create-service-push", "--service-manifest", "myFile", "--no-service-manifest", "blah"})
 		Expect(err).Should(HaveOccurred())
+
+		_, err = cspArgs.Process([]string{"create-service-push", "--service-manifest"})
+		Expect(err).Should(HaveOccurred())
 	})
 
 	It("Should pass with valid --service-manifest inputs", func() {
