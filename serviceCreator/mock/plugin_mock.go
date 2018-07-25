@@ -11,11 +11,12 @@ type MockCliConnection struct {
 
 	GetServicesModels []plugin_models.GetServices_Model
 
-	GetServiceExists           bool
-	GetServiceModel            plugin_models.GetService_Model
-	CliCommandWasCalled        bool
-	SimulateErrorOnGetServices bool
-	SimulateErrorOnCliCommand  bool
+	GetServiceExists                bool
+	GetServiceModel                 plugin_models.GetService_Model
+	CliCommandWasCalled             bool
+	SimulateErrorOnGetServices      bool
+	SimulateErrorOnGetServiceByName bool
+	SimulateErrorOnCliCommand       bool
 }
 
 func NewMockCliConnection() *MockCliConnection {
@@ -102,11 +103,16 @@ func (mc *MockCliConnection) GetServices() ([]plugin_models.GetServices_Model, e
 }
 func (mc *MockCliConnection) GetService(string) (plugin_models.GetService_Model, error) {
 
+	var err error
 	serviceModel := plugin_models.GetService_Model{}
 	if mc.GetServiceExists {
 		serviceModel = mc.GetServiceModel
 	}
-	return serviceModel, nil
+
+	if mc.SimulateErrorOnGetServiceByName {
+		err = fmt.Errorf("SimulateErrorOnGetServiceByName")
+	}
+	return serviceModel, err
 }
 func (mc *MockCliConnection) GetOrg(string) (plugin_models.GetOrg_Model, error) {
 	return plugin_models.GetOrg_Model{}, nil

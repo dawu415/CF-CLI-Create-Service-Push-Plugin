@@ -96,6 +96,31 @@ var _ = Describe("ServiceCreator", func() {
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
 
+	It("serviceCreator should fail on create-service if cf plugin wasn't able to query the services from CloudFoundry by a service name", func() {
+		serviceName := "MyService"
+		brokeredService := serviceManifest.Service{
+			ServiceName:    serviceName,
+			Type:           "",
+			Broker:         "p-mysql",
+			PlanName:       "standard",
+			URL:            "www.blah.com",
+			UpdateService:  false,
+			JSONParameters: "{\"git\":\"www.git.com\"}",
+			Tags:           "blah, cool",
+		}
+		mockCFPlugin.SimulateErrorOnGetServiceByName = true
+		mockCFPlugin.GetServiceExists = true
+		mockCFPlugin.GetServiceModel = plugin_models.GetService_Model{
+			Name: serviceName,
+			LastOperation: plugin_models.GetService_LastOperation{
+				State: "succeeded",
+			},
+		}
+		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
+		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		Expect(err).Should(HaveOccurred())
+	})
+
 	It("serviceCreator should fail on create-service if it had trouble talking to Cloud Foundry on a CliCommand", func() {
 		serviceName := "MyService"
 		brokeredService := serviceManifest.Service{
