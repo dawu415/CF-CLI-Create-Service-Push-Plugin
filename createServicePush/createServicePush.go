@@ -85,10 +85,10 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 	if CSPArguments.DoNotPush {
 		fmt.Printf("--no-push applied: Your application will not be pushed to CF ...\n")
 	} else {
-		fmt.Printf("Performing a CF Push with arguments [ %s ] ...\n", strings.Join(args, " "))
+		fmt.Printf("Performing a CF Push with arguments [ %s ] ...\n", strings.Join(CSPArguments.OtherCFArgs, " "))
 
 		// Perform the cf push
-		output, err := cliConnection.CliCommand(append([]string{"push"}, args...)...)
+		output, err := cliConnection.CliCommand(append([]string{"push"}, CSPArguments.OtherCFArgs...)...)
 		fmt.Printf("%s\n", output)
 
 		if err != nil {

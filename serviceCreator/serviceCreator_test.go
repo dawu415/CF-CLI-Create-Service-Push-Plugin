@@ -72,6 +72,34 @@ var _ = Describe("ServiceCreator", func() {
 				"-t", "\"blah, cool\"", "-c", "{\"git\":\"www.git.com\"}"}))
 	})
 
+	It("serviceCreator should be able to create a brokered service, even with updateServices true, with a blank type succesfully", func() {
+		serviceName := "MyService"
+		brokeredService := serviceManifest.Service{
+			ServiceName:    serviceName,
+			Type:           "",
+			Broker:         "p-mysql",
+			PlanName:       "standard",
+			URL:            "www.blah.com",
+			UpdateService:  true,
+			JSONParameters: "{\"git\":\"www.git.com\"}",
+			Tags:           "blah, cool",
+		}
+		mockCFPlugin.GetServiceExists = true
+		mockCFPlugin.GetServiceModel = plugin_models.GetService_Model{
+			Name: serviceName,
+			LastOperation: plugin_models.GetService_LastOperation{
+				State: "succeeded",
+			},
+		}
+		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(mockCFPlugin.CommandOutput).Should(Equal(
+			[]string{
+				"create-service", "p-mysql", "standard", "MyService",
+				"-t", "\"blah, cool\"", "-c", "{\"git\":\"www.git.com\"}"}))
+	})
+
 	It("serviceCreator should fail on create-service if cf plugin wasn't able to query the services from CloudFoundry", func() {
 		serviceName := "MyService"
 		brokeredService := serviceManifest.Service{
@@ -291,6 +319,30 @@ var _ = Describe("ServiceCreator", func() {
 				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}"}))
 	})
 
+	It("serviceCreator can create credential user provided service with UpdateServices: true when service doesn't exist", func() {
+		serviceName := "MyService"
+		brokeredService := serviceManifest.Service{
+			ServiceName: serviceName,
+			Type:        "credentials",
+			Credentials: map[string]string{
+				"host":  "www.david.com",
+				"user":  "abcd1234",
+				"psswd": "ooosupersecret",
+			},
+			UpdateService:  true,
+			JSONParameters: "{\"git\":\"www.git.com\"}",
+		}
+
+		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(mockCFPlugin.CommandOutput).Should(Equal(
+			[]string{
+				"cups", "MyService",
+				"-p",
+				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}"}))
+	})
+
 	It("serviceCreator should fail on create user provided credential service if cf plugin wasn't able to query the services from CloudFoundry", func() {
 		serviceName := "MyService"
 		brokeredService := serviceManifest.Service{
@@ -397,6 +449,26 @@ var _ = Describe("ServiceCreator", func() {
 				"-l",
 				"drain://www.drainme.com"}))
 	})
+
+	It("serviceCreator can create log-drain user provided service when it doesnt exist and UpdateService is true", func() {
+		serviceName := "MyService"
+		brokeredService := serviceManifest.Service{
+			ServiceName:   serviceName,
+			Type:          "drain",
+			URL:           "drain://www.drainme.com",
+			UpdateService: true,
+		}
+
+		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(mockCFPlugin.CommandOutput).Should(Equal(
+			[]string{
+				"cups", "MyService",
+				"-l",
+				"drain://www.drainme.com"}))
+	})
+
 	It("serviceCreator should fail on create user provided log-drain service if cf plugin wasn't able to query the services from CloudFoundry", func() {
 		serviceName := "MyService"
 		brokeredService := serviceManifest.Service{
@@ -478,6 +550,25 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "https://www.route.com",
 			UpdateService: false,
+		}
+
+		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(mockCFPlugin.CommandOutput).Should(Equal(
+			[]string{
+				"cups", "MyService",
+				"-r",
+				"https://www.route.com"}))
+	})
+
+	It("serviceCreator can create route user provided service when it doesnt exist and updateService is true", func() {
+		serviceName := "MyService"
+		brokeredService := serviceManifest.Service{
+			ServiceName:   serviceName,
+			Type:          "route",
+			URL:           "https://www.route.com",
+			UpdateService: true,
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)

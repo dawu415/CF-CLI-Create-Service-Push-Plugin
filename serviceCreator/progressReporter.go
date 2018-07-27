@@ -14,7 +14,7 @@ type ProgressReporter struct {
 	log            LogFunc
 }
 
-// NewProgressReporter initializes and creates a New Progress Reporter
+// NewProgressReporter initializes and creates a New Progress Reporter defaulting output to stdout
 func NewProgressReporter() *ProgressReporter {
 	return NewProgressReporterWithLoggerOut(fmt.Printf)
 }

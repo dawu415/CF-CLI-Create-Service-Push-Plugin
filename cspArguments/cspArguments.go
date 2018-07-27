@@ -22,7 +22,7 @@ type CSPArguments struct {
 // NewCSPArguments returns an initialized CSPArguments struct
 func NewCSPArguments() *CSPArguments {
 	return &CSPArguments{
-		ServiceManifestFilename: "service-manifest.yml",
+		ServiceManifestFilename: "services-manifest.yml",
 		DoNotCreateServices:     false,
 		DoNotPush:               false,
 		OtherCFArgs:             []string{},
@@ -40,7 +40,6 @@ func (csp *CSPArguments) Process(args []string) (*CSPArguments, error) {
 	if args[0] != "create-service-push" {
 		return csp, fmt.Errorf("This plugin only works with create-service-push")
 	}
-
 	args = args[1:] // Remove the create-service-push tag
 
 	// Process the input arguments specific to create-service-push

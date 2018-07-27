@@ -9,8 +9,12 @@ import (
 
 var _ = Describe("CspArguments", func() {
 	var cspArgs *CSPArguments
+	var uninstallArg string
 	BeforeEach(func() {
 		cspArgs = NewCSPArguments()
+
+		// This is set by the CF CLI Command
+		uninstallArg = "CLI-MESSAGE-UNINSTALL"
 	})
 
 	It("Should fail without the create-service-push", func() {
@@ -21,12 +25,12 @@ var _ = Describe("CspArguments", func() {
 	It("Should pass with the create-service-push and have a normal service-manifest name", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--no-push", "blah"})
 		Expect(err).ShouldNot(HaveOccurred())
-		Expect(cspArgs.ServiceManifestFilename).Should(Equal("service-manifest.yml"))
+		Expect(cspArgs.ServiceManifestFilename).Should(Equal("services-manifest.yml"))
 		Expect(cspArgs.OtherCFArgs).ShouldNot(ContainElement("create-service-push"))
 	})
 
 	It("Should pass with the create-service-push uninstalling", func() {
-		cspArgs, err := cspArgs.Process([]string{"uninstall-plugin", "create-service-push", "--no-push", "blah"})
+		cspArgs, err := cspArgs.Process([]string{uninstallArg, "create-service-push", "--no-push", "blah"})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(cspArgs.IsUninstallingPlugin).Should(BeTrue())
 	})

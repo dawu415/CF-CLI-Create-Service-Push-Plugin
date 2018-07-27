@@ -1,0 +1,22 @@
+---
+create-services:
+- name:   "my-configserver"
+  broker: "p-config-server"
+  plan:   "standard"
+  tags:   "Something, ConfigServer, ConfigServer2"
+  updateService: true
+  
+- name:   "Credentials-UPS"
+  type:   "credentials"
+  credentials:
+    host: "https://abc.mydatabase.com/abcd"
+    username: david
+    password: 12.23@123password
+    
+- name:   "Route-UPS"
+  type:   "route"
+  url:    "https://www.google.com"
+  
+- name:   "LogDrain-UPS"
+  type:   "drain"
+  url:    "syslog-tls://server.myapp.com:1020"

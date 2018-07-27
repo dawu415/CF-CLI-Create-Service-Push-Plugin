@@ -1,0 +1,10 @@
+---
+create-services:
+- name:   "my-database-service"
+  broker: "p-mysql"
+  plan:   "1gb"
+  parameters: "{\"RAM\": 4gb }"
+  tags: "test1, test2"
+  updateService: true
+
+  

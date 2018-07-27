@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/serviceManifest"
@@ -96,32 +97,25 @@ func (c *ServiceCreator) run(args ...string) error {
 
 func (c *ServiceCreator) createUserProvidedCredentialsService(name string, credentials map[string]string, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
+	var shouldUpdateService bool
 	s, err := c.cf.GetServices()
 	if err != nil {
 		return err
 	}
 
 	for _, svc := range s {
-		if svc.Name == name && !updateService {
-			fmt.Print("already exists...skipping creation\n")
-			return nil
+		if svc.Name == name {
+			if !updateService {
+				fmt.Print("already exists...skipping creation\n")
+				return nil
+			}
+			shouldUpdateService = true
 		}
 	}
 
 	credentialsJSON, _ := json.Marshal(credentials)
 
-	/* Tags are not supported yet in CUPS
-	additionalOptions := ""
-	if tags != "" {
-		if runtime.GOOS == "windows" {
-			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
-		} else {
-			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
-		}
-	}
-	*/
-
-	if updateService {
+	if shouldUpdateService {
 		fmt.Print("user provided credential service will now be updated.\n")
 		err = c.run("uups", name, "-p", string(credentialsJSON))
 	} else {
@@ -134,15 +128,19 @@ func (c *ServiceCreator) createUserProvidedCredentialsService(name string, crede
 
 func (c *ServiceCreator) createUserProvidedRouteService(name, urlString, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
+	var shouldUpdateService bool
 	s, err := c.cf.GetServices()
 	if err != nil {
 		return err
 	}
 
 	for _, svc := range s {
-		if svc.Name == name && !updateService {
-			fmt.Print("already exists...skipping creation\n")
-			return nil
+		if svc.Name == name {
+			if !updateService {
+				fmt.Print("already exists...skipping creation\n")
+				return nil
+			}
+			shouldUpdateService = true
 		}
 	}
 
@@ -157,18 +155,7 @@ func (c *ServiceCreator) createUserProvidedRouteService(name, urlString, tags st
 		return fmt.Errorf("route scheme not specified or unsupported. User provided route service only supports https")
 	}
 
-	/* Tags are not supported yet in CUPS
-	additionalOptions := ""
-	if tags != "" {
-		if runtime.GOOS == "windows" {
-			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
-		} else {
-			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
-		}
-	}
-	*/
-
-	if updateService {
+	if shouldUpdateService {
 		fmt.Print("user provided route service will now be updated.\n")
 		err = c.run("uups", name, "-r", urlString)
 	} else {
@@ -181,30 +168,23 @@ func (c *ServiceCreator) createUserProvidedRouteService(name, urlString, tags st
 
 func (c *ServiceCreator) createUserProvidedLogDrainService(name, urlString, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
+	var shouldUpdateService bool
 	s, err := c.cf.GetServices()
 	if err != nil {
 		return err
 	}
 
 	for _, svc := range s {
-		if svc.Name == name && !updateService {
-			fmt.Print("already exists...skipping creation\n")
-			return nil
+		if svc.Name == name {
+			if !updateService {
+				fmt.Print("already exists...skipping creation\n")
+				return nil
+			}
+			shouldUpdateService = true
 		}
 	}
 
-	/* Tags are not supported yet in CUPS
-	additionalOptions := ""
-	if tags != "" {
-		if runtime.GOOS == "windows" {
-			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
-		} else {
-			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
-		}
-	}
-	*/
-
-	if updateService {
+	if shouldUpdateService {
 		fmt.Print("user provided log drain service will now be updated.\n")
 		err = c.run("uups", name, "-l", urlString)
 	} else {
@@ -217,15 +197,19 @@ func (c *ServiceCreator) createUserProvidedLogDrainService(name, urlString, tags
 
 func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags string, updateService bool) error {
 	fmt.Printf("%s - ", name)
+	var shouldUpdateService bool
 	s, err := c.cf.GetServices()
 	if err != nil {
 		return err
 	}
 
 	for _, svc := range s {
-		if svc.Name == name && !updateService {
-			fmt.Print("already exists...skipping creation\n")
-			return nil
+		if svc.Name == name {
+			if !updateService {
+				fmt.Print("already exists...skipping creation\n")
+				return nil
+			}
+			shouldUpdateService = true
 		}
 	}
 
@@ -241,7 +225,7 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 		optionalArgs = append(optionalArgs, fmt.Sprintf("%s", JSONParam))
 	}
 
-	if updateService {
+	if shouldUpdateService {
 		fmt.Printf("broker service will now be updated.\n")
 		err = c.run(append([]string{"update-service", name}, optionalArgs...)...)
 	} else {
@@ -253,7 +237,12 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 		return err
 	}
 
-	for {
+	// Now wait for the service creation to complete.
+	// serviceCreationTimeout is in seconds waiting for service to complete
+	var serviceCreationTimeout = time.Duration(900) * time.Second
+	startTime := time.Now()
+
+	for time.Duration(time.Since(startTime)) <= serviceCreationTimeout {
 		service, err := c.cf.GetService(name)
 		if err != nil {
 			return err
@@ -270,7 +259,6 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 				service.LastOperation.State,
 			)
 		}
-
 	}
 
 	return nil

@@ -1,0 +1,13 @@
+---
+create-service:
+- name:   "my-database-service"
+     broker: "p-mysql"
+plan:   "1gb"
+  
+   name:   "Credentials-UPS"
+  type:   "credentials"
+    credentials:
+    host: "https://abc.mydatabase.com/abcd"
+    username: david
+    password: 12.23@123password
+  

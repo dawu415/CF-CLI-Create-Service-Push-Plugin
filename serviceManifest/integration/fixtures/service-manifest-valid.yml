@@ -1,0 +1,20 @@
+---
+create-services:
+- name:   "my-database-service"
+  broker: "p-mysql"
+  plan:   "1gb"
+  
+- name:   "Credentials-UPS"
+  type:   "credentials"
+  credentials:
+    host: "https://abc.mydatabase.com/abcd"
+    username: david
+    password: 12.23@123password
+    
+- name:   "Route-UPS"
+  type:   "route"
+  url:    "https://www.google.com"
+  
+- name:   "LogDrain-UPS"
+  type:   "drain"
+  url:    "syslog-tls://server.myapp.com:1020"
