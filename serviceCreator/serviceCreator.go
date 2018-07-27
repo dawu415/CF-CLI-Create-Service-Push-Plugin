@@ -10,6 +10,11 @@ import (
 	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/serviceManifest"
 )
 
+// CreatorInterface shows the set of methods that describes the serviceCreator
+type CreatorInterface interface {
+	CreateServices(manifest *serviceManifest.ServiceManifest, cf plugin.CliConnection) error
+}
+
 // ServiceCreator describes the components required for service creation
 type ServiceCreator struct {
 	manifest         *serviceManifest.ServiceManifest
@@ -17,8 +22,13 @@ type ServiceCreator struct {
 	progressReporter *ProgressReporter
 }
 
+// NewServiceCreator creates a service creator with the default progress reporter
+func NewServiceCreator() *ServiceCreator {
+	return &ServiceCreator{progressReporter: NewProgressReporter()}
+}
+
 // CreateServices creates the services specified by manifest via a cliConnection
-func CreateServices(manifest *serviceManifest.ServiceManifest, cf plugin.CliConnection) error {
+func (c *ServiceCreator) CreateServices(manifest *serviceManifest.ServiceManifest, cf plugin.CliConnection) error {
 
 	createServicesobject := &ServiceCreator{
 		manifest:         manifest,
@@ -100,12 +110,23 @@ func (c *ServiceCreator) createUserProvidedCredentialsService(name string, crede
 
 	credentialsJSON, _ := json.Marshal(credentials)
 
+	/* Tags are not supported yet in CUPS
+	additionalOptions := ""
+	if tags != "" {
+		if runtime.GOOS == "windows" {
+			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
+		} else {
+			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
+		}
+	}
+	*/
+
 	if updateService {
 		fmt.Print("user provided credential service will now be updated.\n")
-		err = c.run("uups", name, "-p", string(credentialsJSON), "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("uups", name, "-p", string(credentialsJSON))
 	} else {
 		fmt.Print("will now be created as a user provided credential service.\n")
-		err = c.run("cups", name, "-p", string(credentialsJSON), "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("cups", name, "-p", string(credentialsJSON))
 	}
 
 	return err
@@ -136,12 +157,23 @@ func (c *ServiceCreator) createUserProvidedRouteService(name, urlString, tags st
 		return fmt.Errorf("route scheme not specified or unsupported. User provided route service only supports https")
 	}
 
+	/* Tags are not supported yet in CUPS
+	additionalOptions := ""
+	if tags != "" {
+		if runtime.GOOS == "windows" {
+			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
+		} else {
+			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
+		}
+	}
+	*/
+
 	if updateService {
 		fmt.Print("user provided route service will now be updated.\n")
-		err = c.run("uups", name, "-r", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("uups", name, "-r", urlString)
 	} else {
 		fmt.Print("will now be created as a user provided route service.\n")
-		err = c.run("cups", name, "-r", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("cups", name, "-r", urlString)
 	}
 
 	return err
@@ -161,12 +193,23 @@ func (c *ServiceCreator) createUserProvidedLogDrainService(name, urlString, tags
 		}
 	}
 
+	/* Tags are not supported yet in CUPS
+	additionalOptions := ""
+	if tags != "" {
+		if runtime.GOOS == "windows" {
+			additionalOptions += fmt.Sprintf(" -t \"%s\"", strconv.QuoteToASCII(tags))
+		} else {
+			additionalOptions += fmt.Sprintf(" -t '%s'", tags)
+		}
+	}
+	*/
+
 	if updateService {
 		fmt.Print("user provided log drain service will now be updated.\n")
-		err = c.run("uups", name, "-l", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("uups", name, "-l", urlString)
 	} else {
 		fmt.Print("will now be created as a user provided log drain service.\n")
-		err = c.run("cups", name, "-l", urlString, "-t", fmt.Sprintf("\"%s\"", tags))
+		err = c.run("cups", name, "-l", urlString)
 	}
 
 	return err
@@ -195,7 +238,7 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 
 	if JSONParam != "" {
 		optionalArgs = append(optionalArgs, "-c")
-		optionalArgs = append(optionalArgs, fmt.Sprintf("'%s'", JSONParam))
+		optionalArgs = append(optionalArgs, fmt.Sprintf("%s", JSONParam))
 	}
 
 	if updateService {

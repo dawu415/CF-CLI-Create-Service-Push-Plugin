@@ -25,6 +25,12 @@ var _ = Describe("CspArguments", func() {
 		Expect(cspArgs.OtherCFArgs).ShouldNot(ContainElement("create-service-push"))
 	})
 
+	It("Should pass with the create-service-push uninstalling", func() {
+		cspArgs, err := cspArgs.Process([]string{"uninstall-plugin", "create-service-push", "--no-push", "blah"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(cspArgs.IsUninstallingPlugin).Should(BeTrue())
+	})
+
 	It("Should fail with invalid --service-manifest inputs", func() {
 		_, err := cspArgs.Process([]string{"create-service-push", "--service-manifest", "--no-push", "blah"})
 		Expect(err).Should(HaveOccurred())

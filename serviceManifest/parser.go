@@ -24,7 +24,8 @@ type ParseData struct {
 // NewParser returns a ParseData structure with the default interfaces described in its struct
 func NewParser() *ParseData {
 	return &ParseData{
-		FileIO: NewFileIO(),
+		Decoder: NewYmlDecoder(),
+		FileIO:  NewFileIO(),
 	}
 }
 
@@ -42,6 +43,7 @@ func (p *ParseData) CreateParser(filename string) (*ParseData, error) {
 		err = fmt.Errorf("The file %s was not found", filename)
 	}
 
+	p.Parser = p
 	p.Reader = reader
 	return p, err
 }

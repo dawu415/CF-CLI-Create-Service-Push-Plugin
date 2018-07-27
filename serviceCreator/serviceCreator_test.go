@@ -13,13 +13,15 @@ import (
 var _ = Describe("ServiceCreator", func() {
 	var mockCFPlugin *MockCliConnection
 	var mockServiceManifest *serviceManifest.ServiceManifest
+	var serviceCreatorCmd *ServiceCreator
 	BeforeEach(func() {
 		mockCFPlugin = NewMockCliConnection()
 		mockServiceManifest = &serviceManifest.ServiceManifest{}
+		serviceCreatorCmd = &ServiceCreator{}
 	})
 
 	It("serviceCreator should still work without errors on an empty manifest", func() {
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 	})
 
@@ -37,7 +39,7 @@ var _ = Describe("ServiceCreator", func() {
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
 
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 
 	})
@@ -62,12 +64,12 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"create-service", "p-mysql", "standard", "MyService",
-				"-t", "\"blah, cool\"", "-c", "'{\"git\":\"www.git.com\"}'"}))
+				"-t", "\"blah, cool\"", "-c", "{\"git\":\"www.git.com\"}"}))
 	})
 
 	It("serviceCreator should fail on create-service if cf plugin wasn't able to query the services from CloudFoundry", func() {
@@ -91,7 +93,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -117,7 +119,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 	})
 
@@ -142,7 +144,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeTrue())
 		Expect(err).Should(HaveOccurred())
@@ -168,12 +170,12 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"create-service", "p-mysql", "standard", "MyService",
-				"-t", "\"blah, cool\"", "-c", "'{\"git\":\"www.git.com\"}'"}))
+				"-t", "\"blah, cool\"", "-c", "{\"git\":\"www.git.com\"}"}))
 	})
 
 	It("serviceCreator should not create the brokered service again if it already exists and we don't want to update it", func() {
@@ -202,7 +204,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -233,12 +235,12 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"update-service", "MyService",
-				"-t", "\"blah, cool\"", "-c", "'{\"git\":\"www.git.com\"}'"}))
+				"-t", "\"blah, cool\"", "-c", "{\"git\":\"www.git.com\"}"}))
 	})
 
 	It("serviceCreator should not get stuck in progress loop if an error occurred", func() {
@@ -261,7 +263,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 	})
 
@@ -277,18 +279,16 @@ var _ = Describe("ServiceCreator", func() {
 			},
 			UpdateService:  false,
 			JSONParameters: "{\"git\":\"www.git.com\"}",
-			Tags:           "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"cups", "MyService",
 				"-p",
-				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}",
-				"-t", "\"blah, cool\""}))
+				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}"}))
 	})
 
 	It("serviceCreator should fail on create user provided credential service if cf plugin wasn't able to query the services from CloudFoundry", func() {
@@ -303,11 +303,10 @@ var _ = Describe("ServiceCreator", func() {
 			},
 			UpdateService:  false,
 			JSONParameters: "{\"git\":\"www.git.com\"}",
-			Tags:           "blah, cool",
 		}
 		mockCFPlugin.SimulateErrorOnGetServices = true
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -324,7 +323,6 @@ var _ = Describe("ServiceCreator", func() {
 			},
 			UpdateService:  false,
 			JSONParameters: "{\"git\":\"www.git.com\"}",
-			Tags:           "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -340,7 +338,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -357,7 +355,6 @@ var _ = Describe("ServiceCreator", func() {
 			},
 			UpdateService:  true,
 			JSONParameters: "{\"git\":\"www.git.com\"}",
-			Tags:           "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -373,14 +370,13 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"uups", "MyService",
 				"-p",
-				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}",
-				"-t", "\"blah, cool\""}))
+				"{\"host\":\"www.david.com\",\"psswd\":\"ooosupersecret\",\"user\":\"abcd1234\"}"}))
 	})
 
 	It("serviceCreator can create log-drain user provided service", func() {
@@ -390,18 +386,16 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "drain",
 			URL:           "drain://www.drainme.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"cups", "MyService",
 				"-l",
-				"drain://www.drainme.com",
-				"-t", "\"blah, cool\""}))
+				"drain://www.drainme.com"}))
 	})
 	It("serviceCreator should fail on create user provided log-drain service if cf plugin wasn't able to query the services from CloudFoundry", func() {
 		serviceName := "MyService"
@@ -410,12 +404,11 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "drain",
 			URL:           "drain://www.drainme.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		mockCFPlugin.SimulateErrorOnGetServices = true
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -427,7 +420,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "drain",
 			URL:           "drain://www.drainme.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -443,7 +435,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -455,7 +447,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "drain",
 			URL:           "drain://www.drainme.com",
 			UpdateService: true,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -471,14 +462,13 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"uups", "MyService",
 				"-l",
-				"drain://www.drainme.com",
-				"-t", "\"blah, cool\""}))
+				"drain://www.drainme.com"}))
 	})
 
 	It("serviceCreator can create route user provided service", func() {
@@ -488,18 +478,16 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "https://www.route.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"cups", "MyService",
 				"-r",
-				"https://www.route.com",
-				"-t", "\"blah, cool\""}))
+				"https://www.route.com"}))
 	})
 
 	It("serviceCreator should fail on creation of route user provided service if cf couldn't query the services", func() {
@@ -509,12 +497,11 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "https://www.route.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		mockCFPlugin.SimulateErrorOnGetServices = true
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -526,7 +513,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "https://www.route.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -542,7 +528,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -554,7 +540,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "https://www.route.com",
 			UpdateService: true,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -570,14 +555,13 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(mockCFPlugin.CommandOutput).Should(Equal(
 			[]string{
 				"uups", "MyService",
 				"-r",
-				"https://www.route.com",
-				"-t", "\"blah, cool\""}))
+				"https://www.route.com"}))
 	})
 
 	It("serviceCreator should not be able to update user provided route service if the URL is http schema", func() {
@@ -587,7 +571,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "http://www.route.com",
 			UpdateService: true,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -603,7 +586,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -615,7 +598,6 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "%gh&%ij",
 			UpdateService: true,
-			Tags:          "blah, cool",
 		}
 
 		// Add the mock service in and then try to create the serice
@@ -631,7 +613,7 @@ var _ = Describe("ServiceCreator", func() {
 			},
 		}
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 		Expect(mockCFPlugin.CliCommandWasCalled).Should(BeFalse())
 	})
@@ -643,11 +625,10 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "http://www.route.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 	})
 
@@ -658,11 +639,10 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "www.route.com",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
 	})
 
@@ -673,11 +653,50 @@ var _ = Describe("ServiceCreator", func() {
 			Type:          "route",
 			URL:           "%gh&%ij",
 			UpdateService: false,
-			Tags:          "blah, cool",
 		}
 
 		(*mockServiceManifest).Services = append((*mockServiceManifest).Services, brokeredService)
-		err := CreateServices(mockServiceManifest, mockCFPlugin)
+		err := serviceCreatorCmd.CreateServices(mockServiceManifest, mockCFPlugin)
 		Expect(err).Should(HaveOccurred())
+	})
+
+	It("serviceCreator's Progress reporter should function correctly", func() {
+		var outputBufferString string
+		mockLogFunction := func(format string, a ...interface{}) (n int, err error) {
+			outputBufferString += format
+			return 0, nil
+		}
+
+		progressReporter := NewProgressReporterWithLoggerOut(mockLogFunction)
+		progressReporter.Step("")
+		Expect(progressReporter).ShouldNot(BeNil())
+		Expect(outputBufferString).Should(Equal("|\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("/\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("-\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("\\\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("|\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("/\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("-\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("\\\r"))
+		outputBufferString = ""
+		progressReporter.Step("")
+		Expect(outputBufferString).Should(Equal("|\r"))
+		outputBufferString = ""
+		progressReporter.Step("Finished!")
+		Expect(outputBufferString).Should(Equal("Finished!\n/\r"))
 	})
 })

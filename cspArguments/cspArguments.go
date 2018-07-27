@@ -12,6 +12,7 @@ type Interface interface {
 
 // CSPArguments holds the Processed input arguments
 type CSPArguments struct {
+	IsUninstallingPlugin    bool
 	ServiceManifestFilename string
 	DoNotCreateServices     bool
 	DoNotPush               bool
@@ -30,6 +31,12 @@ func NewCSPArguments() *CSPArguments {
 
 // Process function is the entrypoint for processing Create-Service-Push Arguments
 func (csp *CSPArguments) Process(args []string) (*CSPArguments, error) {
+
+	if args[0] == "CLI-MESSAGE-UNINSTALL" {
+		csp.IsUninstallingPlugin = true
+		return csp, nil
+	}
+
 	if args[0] != "create-service-push" {
 		return csp, fmt.Errorf("This plugin only works with create-service-push")
 	}

@@ -2,7 +2,6 @@ package createServicePush
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -14,13 +13,20 @@ import (
 // CreateServicePush is the struct implementing the interface defined by the core CLI. It can
 // be found at  "code.cloudfoundry.org/cli/plugin/plugin.go"
 type CreateServicePush struct {
-	Parser        *serviceManifest.ParserInterface
-	ArgsProcessor *cspArguments.Interface
+	Parser         serviceManifest.ParserInterface
+	ArgProcessor   cspArguments.Interface
+	ServiceCreator serviceCreator.CreatorInterface
+	Exit           ExitInterface
 }
 
 // Create instantiates a new CreateServicePush struct and returns it as a pointer
 func Create() *CreateServicePush {
-	return &CreateServicePush{}
+	return &CreateServicePush{
+		Parser:         serviceManifest.NewParser(),
+		ArgProcessor:   cspArguments.NewCSPArguments(),
+		ServiceCreator: serviceCreator.NewServiceCreator(),
+		Exit:           NewExitHandler(),
+	}
 }
 
 // Run must be implemented by any plugin because it is part of the
@@ -38,31 +44,40 @@ func Create() *CreateServicePush {
 func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []string) {
 
 	// Process the input arguments
-	CSPArguments, err := (*c.ArgsProcessor).Process(args)
+	CSPArguments, err := c.ArgProcessor.Process(args)
 
 	if err != nil {
 		fmt.Printf("ERROR: %s\n", err)
-		os.Exit(1)
+		c.Exit.HandleError()
+	}
+
+	if CSPArguments.IsUninstallingPlugin {
+		c.Exit.HandleOK()
 	}
 
 	// If we are specified to process a service manifest (by default), then
 	// read in the service manifest and instantiate the services from that
 	if !CSPArguments.DoNotCreateServices {
-		parser, err := c.Parser.CreateParser(CSPArguments.ServiceManifestFilename)
+		p, err := c.Parser.CreateParser(CSPArguments.ServiceManifestFilename)
 
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
-			os.Exit(1)
+			c.Exit.HandleError()
 		}
 
-		manifest, err := parser.Parse()
+		manifest, err := p.Parser.Parse()
 
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)
-			os.Exit(1)
+			c.Exit.HandleError()
 		}
 
-		serviceCreator.CreateServices(manifest, cliConnection)
+		err = c.ServiceCreator.CreateServices(manifest, cliConnection)
+
+		if err != nil {
+			fmt.Printf("ERROR: %s\n", err)
+			c.Exit.HandleError()
+		}
 	}
 
 	// If no-push was specified, don't push the application. Otherwise, push the application
@@ -78,6 +93,7 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 
 		if err != nil {
 			fmt.Printf("ERROR while pushing: %s\n", err)
+			c.Exit.HandleError()
 		}
 	}
 }
