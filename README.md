@@ -69,7 +69,7 @@ create-services:
   ```
 
 # Updating Services
-## Support for tags is available as of 1.2.0
+## Support for updateService is available as of 1.2.0
 
 Updating of services is implemented here for only the service `Parameters` and `Tags`. Please see Tags section below for more information on limitations. Updating of services works for brokered, as well as all user-provided service types.
 
