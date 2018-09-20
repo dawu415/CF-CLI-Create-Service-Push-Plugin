@@ -1,9 +1,12 @@
 package cspArguments_test
 
 import (
+	"strings"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/cloudfoundry/bosh-cli/director/template"
 	. "github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/cspArguments"
 )
 
@@ -78,4 +81,51 @@ var _ = Describe("CspArguments", func() {
 		Expect(cspArgs.OtherCFArgs).ShouldNot(ContainElement("--no-push"))
 	})
 
+	It("Should handle multiple inputs of --vars-file commands and should pass this to CF push", func() {
+		cspArgs, err := cspArgs.Process([]string{"create-service-push", "myapp", "--vars-file", "someVar.yml", "--vars-file", "params.yml"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(len(cspArgs.StaticVariablesFilePaths)).Should(Equal(2))
+		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("someVar.yml"))
+		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("params.yml"))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(5))
+		Expect(cspArgs.OtherCFArgs).Should(ContainElement("myapp"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file someVar.yml"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file params.yml"))
+	})
+
+	It("Should handle bad inputs of --vars-file commands", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "--vars-file", "--vars-file", "params.yml"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle bad inputs of --vars-file commands where no filename is specified", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "--vars-file"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle multiple inputs of --var commands and should pass this to CF push", func() {
+		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--var", "explode=false", "--var", "IsGood=true"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(len(cspArgs.StaticVariables)).Should(Equal(2))
+		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "explode", Value: "false"}))
+		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "IsGood", Value: "true"}))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(4))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var explode=false"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var IsGood=true"))
+	})
+
+	It("Should handle bad input where there's no key value pair ", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "--var"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle bad input where key value pair has a space before the = sign ", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--var", "preboom", "=true"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle bad input where key value pair has a space after the = sign ", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--var", "postboom=", "true"})
+		Expect(err).Should(HaveOccurred())
+	})
 })
