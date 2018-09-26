@@ -6,7 +6,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/cloudfoundry/bosh-cli/director/template"
 	. "github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/cspArguments"
 )
 
@@ -118,8 +117,8 @@ var _ = Describe("CspArguments", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--var", "explode=false", "--var", "IsGood=true"})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(len(cspArgs.StaticVariables)).Should(Equal(2))
-		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "explode", Value: "false"}))
-		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "IsGood", Value: "true"}))
+		Expect(cspArgs.StaticVariables).Should(HaveKeyWithValue("explode", "false"))
+		Expect(cspArgs.StaticVariables).Should(HaveKeyWithValue("IsGood", "true"))
 		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(0))
 		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--var explode=false"))
 		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--var IsGood=true"))
@@ -173,8 +172,9 @@ var _ = Describe("CspArguments", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--var", "explode=false", "--var", "IsGood=true", "--push-as-subprocess"})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(len(cspArgs.StaticVariables)).Should(Equal(2))
-		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "explode", Value: "false"}))
-		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "IsGood", Value: "true"}))
+
+		Expect(cspArgs.StaticVariables).Should(HaveKeyWithValue("explode", "false"))
+		Expect(cspArgs.StaticVariables).Should(HaveKeyWithValue("IsGood", "true"))
 		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(4))
 		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var explode=false"))
 		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var IsGood=true"))

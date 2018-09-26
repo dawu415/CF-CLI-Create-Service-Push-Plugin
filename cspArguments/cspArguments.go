@@ -3,8 +3,6 @@ package cspArguments
 import (
 	"fmt"
 	"strings"
-
-	"github.com/cloudfoundry/bosh-cli/director/template"
 )
 
 // Interface describes the interface to process input commandline arguments
@@ -29,7 +27,7 @@ type CSPArguments struct {
 	DoNotPush                bool
 	PushAsSubProcess         bool
 	StaticVariablesFilePaths []string
-	StaticVariables          []template.VarKV
+	StaticVariables          map[string]string
 	OtherCFArgs              []string                    // Holds other commandline arguments that isn't used by CSP. This will be passed to cf push.
 	cspFlags                 map[string]*CSPFlagProperty // Private variable
 }
@@ -42,7 +40,7 @@ func NewCSPArguments() *CSPArguments {
 		DoNotPush:                false,
 		PushAsSubProcess:         false,
 		StaticVariablesFilePaths: []string{},
-		StaticVariables:          []template.VarKV{},
+		StaticVariables:          map[string]string{},
 		OtherCFArgs:              []string{},
 
 		cspFlags: map[string]*CSPFlagProperty{
@@ -66,11 +64,7 @@ func NewCSPArguments() *CSPArguments {
 								}
 							}
 
-							csp.StaticVariables = append(csp.StaticVariables,
-								template.VarKV{
-									Name:  tokenString[0],
-									Value: tokenString[1],
-								})
+							csp.StaticVariables[tokenString[0]] = tokenString[1]
 
 							// We expect the next argument to be on of the form 'a=b', and arg array should be like ["--var", "key=value"]
 							// If the push as sub-process was actually processed, we can these flags as well
