@@ -25,6 +25,17 @@ var _ = Describe("CspArguments", func() {
 		Expect(err).Should(HaveOccurred())
 	})
 
+	It("Should pass without any arguments", func() {
+		_, err := cspArgs.Process([]string{"create-service-push"})
+		Expect(err).ShouldNot(HaveOccurred())
+	})
+
+	It("Should pass with just the app name any arguments", func() {
+		cspArgs, err := cspArgs.Process([]string{"create-service-push", "myapp"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(cspArgs.OtherCFArgs).Should(ContainElement("myapp"))
+	})
+
 	It("Should pass with the create-service-push and have a normal service-manifest name", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--no-push", "blah"})
 		Expect(err).ShouldNot(HaveOccurred())
@@ -81,16 +92,16 @@ var _ = Describe("CspArguments", func() {
 		Expect(cspArgs.OtherCFArgs).ShouldNot(ContainElement("--no-push"))
 	})
 
-	It("Should handle multiple inputs of --vars-file commands and should pass this to CF push", func() {
+	It("Should handle multiple inputs of --vars-file commands and should not pass this to CF push", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "myapp", "--vars-file", "someVar.yml", "--vars-file", "params.yml"})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(len(cspArgs.StaticVariablesFilePaths)).Should(Equal(2))
 		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("someVar.yml"))
 		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("params.yml"))
-		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(5))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(1))
 		Expect(cspArgs.OtherCFArgs).Should(ContainElement("myapp"))
-		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file someVar.yml"))
-		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file params.yml"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--vars-file someVar.yml"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--vars-file params.yml"))
 	})
 
 	It("Should handle bad inputs of --vars-file commands", func() {
@@ -103,15 +114,15 @@ var _ = Describe("CspArguments", func() {
 		Expect(err).Should(HaveOccurred())
 	})
 
-	It("Should handle multiple inputs of --var commands and should pass this to CF push", func() {
+	It("Should handle multiple inputs of --var commands and should not pass this to CF push", func() {
 		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--var", "explode=false", "--var", "IsGood=true"})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(len(cspArgs.StaticVariables)).Should(Equal(2))
 		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "explode", Value: "false"}))
 		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "IsGood", Value: "true"}))
-		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(4))
-		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var explode=false"))
-		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var IsGood=true"))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(0))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--var explode=false"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).ShouldNot(ContainSubstring("--var IsGood=true"))
 	})
 
 	It("Should handle bad input where there's no key value pair ", func() {
@@ -127,5 +138,58 @@ var _ = Describe("CspArguments", func() {
 	It("Should handle bad input where key value pair has a space after the = sign ", func() {
 		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--var", "postboom=", "true"})
 		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle --push-as-subprocess ", func() {
+		csp, err := cspArgs.Process([]string{"create-service-push", "myapp", "--push-as-subprocess"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(csp.PushAsSubProcess).To(BeTrue())
+	})
+
+	It("Should give error when --push-as-subprocess is combined with --no-push", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--push-as-subprocess", "--no-push"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should give error when --no-push is combined with --push-as-subprocess ", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--no-push", "--push-as-subprocess"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should pass --vars-file when --push-as-subprocess is used", func() {
+		cspArgs, err := cspArgs.Process([]string{"create-service-push", "myapp", "--vars-file", "someVar.yml", "--vars-file", "params.yml", "--push-as-subprocess"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(len(cspArgs.StaticVariablesFilePaths)).Should(Equal(2))
+		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("someVar.yml"))
+		Expect(cspArgs.StaticVariablesFilePaths).Should(ContainElement("params.yml"))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(5))
+		Expect(cspArgs.OtherCFArgs).Should(ContainElement("myapp"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file someVar.yml"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--vars-file params.yml"))
+		Expect(cspArgs.PushAsSubProcess).To(BeTrue())
+	})
+
+	It("Should handle multiple inputs of --var commands and should pass this to CF push", func() {
+		cspArgs, err := cspArgs.Process([]string{"create-service-push", "--var", "explode=false", "--var", "IsGood=true", "--push-as-subprocess"})
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(len(cspArgs.StaticVariables)).Should(Equal(2))
+		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "explode", Value: "false"}))
+		Expect(cspArgs.StaticVariables).Should(ContainElement(template.VarKV{Name: "IsGood", Value: "true"}))
+		Expect(len(cspArgs.OtherCFArgs)).Should(Equal(4))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var explode=false"))
+		Expect(strings.Join(cspArgs.OtherCFArgs, " ")).Should(ContainSubstring("--var IsGood=true"))
+		Expect(cspArgs.PushAsSubProcess).To(BeTrue())
+	})
+
+	It("Should return usage text properly", func() {
+		usageInstructions := cspArgs.GetUsage()
+		println(usageInstructions)
+		Expect(usageInstructions).ShouldNot(BeNil())
+		Expect(usageInstructions).ShouldNot(BeEmpty())
+	})
+
+	It("Should return the flag descriptions", func() {
+		argDescriptions := cspArgs.GetArgumentsDescription()
+		Expect(argDescriptions).Should(BeAssignableToTypeOf(map[string]string{}))
 	})
 })

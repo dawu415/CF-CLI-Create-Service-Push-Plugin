@@ -132,12 +132,8 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 				// UsageDetails is optional
 				// It is used to show help of usage of each command
 				UsageDetails: plugin.Usage{
-					Usage: "create-service-push\n   cf create-service-push",
-					Options: map[string]string{
-						"--service-manifest <MANIFEST_FILE>": "Specify the fullpath and filename of the services creation manifest.  Defaults to services-manifest.yml.",
-						"--no-service-manifest":              "Specifies that there is no service creation manifest",
-						"--no-push":                          "Create the services but do not push the application",
-					},
+					Usage:   c.ArgProcessor.GetUsage(),
+					Options: c.ArgProcessor.GetArgumentsDescription(),
 				},
 			},
 		},
