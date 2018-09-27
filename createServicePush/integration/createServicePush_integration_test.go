@@ -139,4 +139,17 @@ var _ = Describe("CreateServicePush", func() {
 		Expect(string(session.Buffer().Contents()[:])).Should(ContainSubstring("--no-push applied"))
 	})
 
+	//!!NOTE: For this test to run and pass, you will need to set an enviroment variable, i.e., export CSPAPP_ENV=blah
+	It("create service should run and create services from a valid local services-manifest that expects a local environment variable", func() {
+		args := []string{ts.Port(), "create-service-push", "--service-manifest", "services-manifest-env-variable.yml", "--no-push", "--use-env-vars-prefixed-with", "CSPAPP"}
+
+		session, _ := gexec.Start(exec.Command(validPluginPath, args...), GinkgoWriter, GinkgoWriter)
+		session.Wait()
+
+		println(string(session.Buffer().Contents()[:]))
+		Expect(session.ExitCode()).To(Equal(0))
+		Expect(string(session.Buffer().Contents()[:])).Should(ContainSubstring("sandbox-configserver - will now be created as a brokered service."))
+		Expect(string(session.Buffer().Contents()[:])).Should(ContainSubstring("--no-push applied"))
+	})
+
 })

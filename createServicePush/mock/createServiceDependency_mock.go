@@ -35,6 +35,14 @@ func (mcsp *MockCreateService) Process(args []string) (*cspArguments.CSPArgument
 	}, err
 }
 
+func (mcsp *MockCreateService) GetUsage() string {
+	return ""
+}
+
+func (mcsp *MockCreateService) GetArgumentsDescription() map[string]string {
+	return map[string]string{}
+}
+
 func (mcsp *MockCreateService) CreateServices(manifest *serviceManifest.ServiceManifest, cf plugin.CliConnection) error {
 
 	var err error
@@ -47,7 +55,7 @@ func (mcsp *MockCreateService) CreateServices(manifest *serviceManifest.ServiceM
 }
 
 // Parse parses a manifest from a reader
-func (mcsp *MockCreateService) Parse() (*serviceManifest.ServiceManifest, error) {
+func (mcsp *MockCreateService) Parse([]string, map[string]string) (*serviceManifest.ServiceManifest, error) {
 
 	var err error
 	if mcsp.ParseHasError {

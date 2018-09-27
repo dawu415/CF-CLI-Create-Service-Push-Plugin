@@ -1,0 +1,8 @@
+---
+create-services:
+- name:   "((CSPAPP_ENV))-configserver"
+  broker: "p-config-server"
+  plan:   "standard"
+  tags:   "Something, ConfigServer, ConfigServer2"
+  updateService: true
+  

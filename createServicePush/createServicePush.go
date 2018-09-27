@@ -65,7 +65,7 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 			c.Exit.HandleError()
 		}
 
-		manifest, err := p.Parser.Parse()
+		manifest, err := p.Parser.Parse(CSPArguments.StaticVariablesFilePaths, CSPArguments.StaticVariables)
 
 		if err != nil {
 			fmt.Printf("ERROR: %s\n", err)

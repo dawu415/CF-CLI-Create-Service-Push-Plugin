@@ -1,6 +1,7 @@
 package cspArguments_test
 
 import (
+	"os"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -191,5 +192,26 @@ var _ = Describe("CspArguments", func() {
 	It("Should return the flag descriptions", func() {
 		argDescriptions := cspArgs.GetArgumentsDescription()
 		Expect(argDescriptions).Should(BeAssignableToTypeOf(map[string]string{}))
+	})
+
+	It("Should handle invalid input of --use-env-vars-prefixed-with", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--use-env-vars-prefixed-with"})
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("Should handle input --use-env-vars-prefixed-with even though there were no environment variables prefixed", func() {
+		_, err := cspArgs.Process([]string{"create-service-push", "myapp", "--use-env-vars-prefixed-with", "BLAHBLAHBLAH"})
+		Expect(err).ShouldNot(HaveOccurred())
+	})
+
+	It("Should be able to handle input --use-env-vars-prefixed-with correctly", func() {
+
+		os.Setenv("CSPENV_VariableA", "12345")
+		os.Setenv("CSPENV_VariableB", "David")
+		csp, err := cspArgs.Process([]string{"create-service-push", "myapp", "--use-env-vars-prefixed-with", "CSPENV"})
+		Expect(err).ShouldNot(HaveOccurred())
+
+		Expect(csp.StaticVariables).Should(HaveKeyWithValue("CSPENV_VariableA", "12345"))
+		Expect(csp.StaticVariables).Should(HaveKeyWithValue("CSPENV_VariableB", "David"))
 	})
 })

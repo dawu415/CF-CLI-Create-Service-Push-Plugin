@@ -240,6 +240,6 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("username", "david"))
 		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("password", "qwerty9876"))
 		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("host", "https://sandbox.mydatabase.com/apps/test"))
-
 	})
+
 })

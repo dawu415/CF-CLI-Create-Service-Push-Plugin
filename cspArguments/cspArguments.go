@@ -2,12 +2,15 @@ package cspArguments
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
 // Interface describes the interface to process input commandline arguments
 type Interface interface {
 	Process(args []string) (*CSPArguments, error)
+	GetUsage() string
+	GetArgumentsDescription() map[string]string
 }
 
 // CSPFlagProperty defines a flag in create-service-push, its properties and a handler to decode output to a CSPArgument struct
@@ -120,6 +123,31 @@ func NewCSPArguments() *CSPArguments {
 				shouldDefer: true, // We need to defer because we want to ensure push-as-subprocess is processed first
 			},
 			/////////////////////////////////////////////////
+			"--use-env-vars-prefixed-with": &CSPFlagProperty{
+				description:   "Use environment variables that have a given prefix as substitution variables, i.e. --use-env-vars-prefixed-with APP_ will get all environment variables prefixed with APP_",
+				argumentCount: 1,
+				handler: func(index int, args []string, csp *CSPArguments, err *error) {
+					if (index + 1) < len(args) { // Ensure a prefix has been specified
+						// Get all environments prefixed with an input specified by args[index+1]
+
+						for _, env := range os.Environ() {
+							if strings.HasPrefix(env, args[index+1]) {
+								tokenString := strings.SplitN(env, "=", 2)
+								csp.StaticVariables[tokenString[0]] = tokenString[1]
+							}
+						}
+
+						csp.cspFlags["--use-env-vars-prefixed-with"].processed = true
+					} else {
+						*err = fmt.Errorf("--use-env-vars-prefixed-with is missing a prefix input")
+						return
+					}
+					*err = nil
+				},
+				processed:   false,
+				shouldDefer: false,
+			},
+			/////////////////////////////////////////////////
 			"--no-push": &CSPFlagProperty{
 				description:   "Create the services but do not push the application",
 				argumentCount: 0,
@@ -208,6 +236,7 @@ func (csp *CSPArguments) GetUsage() string {
                            [ --service-manifest SERVICE_MANIFEST_FULL_PATH | --no-service-manifest ]
                            [ --no-push | --push-as-subprocess ]
                            [ --var KEY=VALUE ] [ --vars-file VARS_FILE_FULL_PATH ]
+                           [ --use-env-vars-prefixed-with PREFIX ]
                            [CF_PUSH_ARGUMENTS]
     NOTES:
     a) APP_NAME is optional but should always be at the first position. cf push will validate this.

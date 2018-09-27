@@ -7,18 +7,15 @@ import (
 	. "github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/createServicePush"
 	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/createServicePush/mock"
 	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/serviceCreator/mock"
-	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/serviceManifest"
 )
 
 var _ = Describe("CreateServicePush", func() {
 	var mockCFPlugin *serviceCreatorMock.MockCliConnection
-	var mockServiceManifest *serviceManifest.ServiceManifest
 	var mockCreateServiceInterfaces *createService_mock.MockCreateService
 	var mockCSP *CreateServicePush
 	var mockExitHandler *createService_mock.MockExitHandler
 	BeforeEach(func() {
 		mockCFPlugin = serviceCreatorMock.NewMockCliConnection()
-		mockServiceManifest = &serviceManifest.ServiceManifest{}
 		mockCreateServiceInterfaces = createService_mock.NewMockCreateService()
 		mockExitHandler = createService_mock.NewMockExitHandler()
 		// mockCreateService will hold the implementation for all
