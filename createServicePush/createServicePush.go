@@ -2,6 +2,10 @@ package createServicePush
 
 import (
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 
 	"code.cloudfoundry.org/cli/plugin"
@@ -85,11 +89,50 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 	if CSPArguments.DoNotPush {
 		fmt.Printf("--no-push applied: Your application will not be pushed to CF ...\n")
 	} else {
-		fmt.Printf("Performing a CF Push with arguments [ %s ] ...\n", strings.Join(CSPArguments.OtherCFArgs, " "))
-
+		var err error
 		// Perform the cf push
-		output, err := cliConnection.CliCommand(append([]string{"push"}, CSPArguments.OtherCFArgs...)...)
-		fmt.Printf("%s\n", output)
+		if CSPArguments.PushAsSubProcess {
+			fmt.Printf("Performing a CF Push, as a subprocess, with arguments [ %s ] ...\n", strings.Join(CSPArguments.OtherCFArgs, " "))
+
+			// Set the file extension to use, depending on the OS that we're running on
+			var fileExtension = ""
+			if runtime.GOOS == "windows" {
+				fileExtension = ".exe"
+			}
+
+			// Search the current directory for the cf, if its not there, we'll search the $PATH
+			cwd, err := os.Getwd()
+			if err != nil {
+				fmt.Printf("ERROR while pushing: %s\n", err)
+				c.Exit.HandleError()
+			}
+
+			var binaryFullPath = filepath.Join(cwd, "cf"+fileExtension)
+			argsToPush := append([]string{"push"}, CSPArguments.OtherCFArgs...)
+			if _, err := os.Stat(binaryFullPath); os.IsNotExist(err) {
+				fmt.Println("Did not find the cf executable in the current directory...Now looking at PATH")
+				var lookupErr error
+				// if it doesn't exist, we'll look up the PATH variable instead.
+				binaryFullPath, lookupErr = exec.LookPath("cf" + fileExtension)
+				if lookupErr != nil {
+					fmt.Printf("ERROR while pushing: %s\n", lookupErr)
+					c.Exit.HandleError()
+				}
+			}
+
+			fmt.Println("Now Running the cf command: " + binaryFullPath)
+			cmd := exec.Command(binaryFullPath, argsToPush...)
+			cmd.Stdin = os.Stdin
+			cmd.Stdout = os.Stdout
+			cmd.Stderr = os.Stderr
+			err = cmd.Run()
+		} else {
+			fmt.Printf("Performing a CF Push with arguments [ %s ] ...\n", strings.Join(CSPArguments.OtherCFArgs, " "))
+
+			var output []string
+			output, err = cliConnection.CliCommand(append([]string{"push"}, CSPArguments.OtherCFArgs...)...)
+			fmt.Printf("%s\n", output)
+		}
 
 		if err != nil {
 			fmt.Printf("ERROR while pushing: %s\n", err)
@@ -115,7 +158,7 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Name: "Create-Service-Push",
 		Version: plugin.VersionType{
 			Major: 1,
-			Minor: 2,
+			Minor: 3,
 			Build: 0,
 		},
 		MinCliVersion: plugin.VersionType{

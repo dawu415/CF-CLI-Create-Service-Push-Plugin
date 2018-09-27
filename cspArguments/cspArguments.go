@@ -244,8 +244,9 @@ func (csp *CSPArguments) GetUsage() string {
        cf push will expect to find it in an application manifest. 
 
     b) --push-as-subprocess overrides the cf cli plugin call to cf push and calls the cf cli installed on the machine instead.
-       This was introduced as a workaround where the cf cli plugin architecture did not incorporate new features, such
-       as --var and --vars-file. See https://github.com/cloudfoundry/cli/issues/1399#issuecomment-409061226 .
+       This flag will search for the cf cli in the current working directory first. If it is not present, it will search the 
+       paths in the PATH environment variable. This was introduced as a workaround where the cf cli plugin architecture did not
+       incorporate new features, such as --var and --vars-file. See https://github.com/cloudfoundry/cli/issues/1399#issuecomment-409061226 .
 
     c) By default --var and --vars-file will not be passed to cf push due to non-support in the cf plugin architecture. However,
        support for variable substitution is built into the plugin.  To pass --var and --vars-file parameters to cf push, use 
