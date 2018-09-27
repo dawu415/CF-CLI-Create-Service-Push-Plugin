@@ -8,9 +8,23 @@ This plugin extends cf push. So it will act the same way as cf push, with the ex
 # Additional Parameters
 The create-service-push cli plugin supports the following optional parameters:
 
- * --service-manifest <MANIFEST_FILE>: Specify the fullpath and filename of the services creation manifest.  Defaults to services-manifest.yml
- * --no-service-manifest:              Specifies that there is no service creation manifest
- * --no-push:                          Create the services but do not push the application
+ version  1.0.0 and above
+ ------------------------ 
+ * `--service-manifest MANIFEST_FILE`: Specify the fullpath and filename of the services creation manifest.  Defaults to services-manifest.yml.
+
+ * `--no-service-manifest`:              Specifies that there is no service creation manifest.
+
+ * `--no-push`:                          Create the services but do not push the application.
+
+ version  1.3.0 and above
+ ------------------------ 
+ * `--use-env-vars-prefixed-with PREFIX`: Allows services-manifest to use environment variables that have a prefix `PREFIX` for variable substitution. 
+
+ * `--var KEY=VALUE`: Sets a single variable to used to be substituted into the services-manifest. Can be specified multiple times. Does not propagate to cf push unless the `--push-as-subprocess` is specified. 
+
+ * `--vars-file FULLPATH_FILENAME`: Sets a single vars file containing variables to be used for substitution into a services-manifest.  Can be specified multiple times. Does not propagate to cf push unless the `--push-as-subprocess` is specified.
+
+ * `--push-as-subprocess`: Forces the cf push to be called from the OS as a sub-process rather than use the internal CF CLI Plugin Command architecture.  This makes the assumption that there will be a file named `cf` or `cf.exe` that can be found in the current working directory or in the System's PATH environment variable. This was introduced to work around a temporary breaking refactor change in the CF CLI plugin architecture where new features such as `--var` could not be directly used.
 
 # services-manifest.yml sample
 ```
@@ -107,4 +121,22 @@ create-services:
   broker: "p-config-server"
   plan:   "standard"
   tags:   "Something, ConfigServer, appname-config-server"
+```
+
+
+# Variable Substitution
+## Support for variable substitution is available as of 1.3.0
+
+Variables can be specified via the parameter inputs `--var KEY=VALUE` and `--vars-file FULLPATH_FILENAME`, which sets a single variable or a specifies a file containing a set of variables that can be substituted into a services-manifest, respectively. Note that these flags do not get passed to cf push, unless `--push-as-subprocess` is specified.
+
+In addition to the above, 1.3.0 also allows environment variables to be substituted in. This is done via the flag `--use-env-vars-prefixed-with PREFIX`. This is limited by environment variables that have been created with some prefix, e.g. APPNAME can be a prefix that one sets in the environment variable such as APPNAME_APPNAME_configserverID and will be picked up the plugin.
+
+Sample services-manifest using enviroment variable
+```
+---
+create-services:
+- name:   "((environment))-configserver"
+  broker: "p-config-server"
+  plan:   "standard"
+  tags:   "((APPNAME_configserverID)), ConfigServer, appname-config-server"
 ```
