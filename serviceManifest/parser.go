@@ -8,7 +8,7 @@ import (
 
 // ParserInterface is an interface describing the default methods used to decode a manifest file
 type ParserInterface interface {
-	Parse() (*ServiceManifest, error)
+	Parse(varsFilePaths []string, vars map[string]string) (*ServiceManifest, error)
 	CreateParser(filename string) (*ParseData, error)
 }
 
@@ -49,10 +49,11 @@ func (p *ParseData) CreateParser(filename string) (*ParseData, error) {
 }
 
 // Parse parses a manifest from a reader
-func (p *ParseData) Parse() (*ServiceManifest, error) {
+func (p *ParseData) Parse(varsFilePaths []string, vars map[string]string) (*ServiceManifest, error) {
 	bytes, err := ioutil.ReadAll(p.Reader)
 	if err != nil {
 		return nil, err
 	}
-	return p.Decoder.DecodeManifest(bytes)
+
+	return p.Decoder.DecodeManifest(bytes, varsFilePaths, vars)
 }

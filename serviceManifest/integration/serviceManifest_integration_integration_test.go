@@ -19,7 +19,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest).ShouldNot(BeNil())
@@ -38,7 +38,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		_, err = p.Parse()
+		_, err = p.Parse([]string{}, map[string]string{})
 		Expect(err).Should(HaveOccurred())
 	})
 
@@ -48,7 +48,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest.Services).ShouldNot(BeNil())
 
@@ -61,7 +61,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest.Services).ShouldNot(BeNil())
 
@@ -82,7 +82,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest.Services).ShouldNot(BeNil())
 
@@ -102,7 +102,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest.Services).ShouldNot(BeNil())
 
@@ -120,7 +120,7 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(p.Reader).ShouldNot(BeNil())
 
-		manifest, err := p.Parse()
+		manifest, err := p.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest.Services).ShouldNot(BeNil())
 
@@ -130,5 +130,116 @@ var _ = Describe("ServiceManifest", func() {
 		Expect(manifest.Services[0].ServiceName).Should(Equal("RUPS"))
 		Expect(manifest.Services[0].URL).Should(Equal("https://www.google.com"))
 		Expect(manifest.Services[0].UpdateService).Should(BeFalse())
+	})
+
+	It("A parser can successfully evaluate a --vars variable", func() {
+		p, err := realParser.CreateParser("./fixtures/service-manifest-valid-route-variable.yml")
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(p.Reader).ShouldNot(BeNil())
+
+		vars := map[string]string{
+			"environment": "sandbox",
+			"endpoint":    "/apps/test",
+		}
+
+		manifest, err := p.Parser.Parse([]string{}, vars)
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(manifest.Services).ShouldNot(BeNil())
+
+		Expect(len(manifest.Services)).Should(Equal(1))
+
+		Expect(manifest.Services[0].Type).Should(Equal("route"))
+		Expect(manifest.Services[0].ServiceName).Should(Equal("sandbox-RUPS"))
+		Expect(manifest.Services[0].URL).Should(Equal("https://www.google.com/apps/test"))
+		Expect(manifest.Services[0].UpdateService).Should(BeFalse())
+
+	})
+
+	It("A parser can successfully evaluate --vars variables even if the map had extra elements inside", func() {
+		p, err := realParser.CreateParser("./fixtures/service-manifest-valid-route-variable.yml")
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(p.Reader).ShouldNot(BeNil())
+
+		vars := map[string]string{
+			"environment":  "sandbox",
+			"endpoint":     "/apps/test",
+			"extraelement": "Boo!",
+		}
+
+		manifest, err := p.Parser.Parse([]string{}, vars)
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(manifest.Services).ShouldNot(BeNil())
+
+		Expect(len(manifest.Services)).Should(Equal(1))
+
+		Expect(manifest.Services[0].Type).Should(Equal("route"))
+		Expect(manifest.Services[0].ServiceName).Should(Equal("sandbox-RUPS"))
+		Expect(manifest.Services[0].URL).Should(Equal("https://www.google.com/apps/test"))
+		Expect(manifest.Services[0].UpdateService).Should(BeFalse())
+	})
+
+	It("A parser will error when trying to evaluate the yaml file that does not have all variables defined", func() {
+		p, err := realParser.CreateParser("./fixtures/service-manifest-valid-route-variable.yml")
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(p.Reader).ShouldNot(BeNil())
+
+		vars := map[string]string{
+			"environment": "sandbox",
+		}
+
+		_, err = p.Parser.Parse([]string{}, vars)
+
+		Expect(err).Should(HaveOccurred())
+	})
+
+	It("A parser can successfully evaluate a --vars-file variable", func() {
+		p, err := realParser.CreateParser("./fixtures/service-manifest-valid-route-variable.yml")
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(p.Reader).ShouldNot(BeNil())
+
+		manifest, err := p.Parser.Parse([]string{"./fixtures/service-manifest-test-variables.yml"}, map[string]string{})
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(manifest.Services).ShouldNot(BeNil())
+
+		Expect(len(manifest.Services)).Should(Equal(1))
+
+		Expect(manifest.Services[0].Type).Should(Equal("route"))
+		Expect(manifest.Services[0].ServiceName).Should(Equal("sandbox-RUPS"))
+		Expect(manifest.Services[0].URL).Should(Equal("https://www.google.com/apps/test"))
+		Expect(manifest.Services[0].UpdateService).Should(BeFalse())
+	})
+
+	It("A parser can successfully evaluate both a --vars and --vars-file", func() {
+
+		p, err := realParser.CreateParser("./fixtures/service-manifest-valid-with-variables.yml")
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(p.Reader).ShouldNot(BeNil())
+
+		vars := map[string]string{
+			"username": "david",
+			"password": "qwerty9876",
+		}
+
+		manifest, err := p.Parser.Parse([]string{"./fixtures/service-manifest-test-variables.yml"}, vars)
+
+		Expect(err).ShouldNot(HaveOccurred())
+		Expect(manifest.Services).ShouldNot(BeNil())
+
+		Expect(len(manifest.Services)).Should(Equal(1))
+
+		Expect(manifest.Services[0].Type).Should(Equal("credentials"))
+		Expect(manifest.Services[0].ServiceName).Should(Equal("Credentials-UPS"))
+		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("username", "david"))
+		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("password", "qwerty9876"))
+		Expect(manifest.Services[0].Credentials).Should(HaveKeyWithValue("host", "https://sandbox.mydatabase.com/apps/test"))
+
 	})
 })

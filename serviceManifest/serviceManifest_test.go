@@ -50,7 +50,7 @@ var _ = Describe("ServiceManifest", func() {
 	})
 
 	It("Parse should return a manifest struct file with a service name set to the buffer content", func() {
-		manifest, err := mockParser.Parse()
+		manifest, err := mockParser.Parse([]string{}, map[string]string{})
 		Expect(err).ShouldNot(HaveOccurred())
 		Expect(manifest).ShouldNot(BeNil())
 		Expect(manifest.Services[0].ServiceName).Should(Equal("Test"))

@@ -14,7 +14,7 @@ func NewMockDecoder() *MockDecoder {
 }
 
 // DecodeManifest Performs the mocked decoding
-func (mock *MockDecoder) DecodeManifest(bytes []byte) (*serviceManifest.ServiceManifest, error) {
+func (mock *MockDecoder) DecodeManifest(bytes []byte, varsFilePaths []string, vars map[string]string) (*serviceManifest.ServiceManifest, error) {
 	return &serviceManifest.ServiceManifest{
 		Services: []serviceManifest.Service{
 			serviceManifest.Service{
