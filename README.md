@@ -24,7 +24,7 @@ The create-service-push cli plugin supports the following optional parameters:
 
  * `--vars-file FULLPATH_FILENAME`: Sets a single vars file containing variables to be used for substitution into a services-manifest.  Can be specified multiple times. Does not propagate to cf push unless the `--push-as-subprocess` is specified.
 
- * `--push-as-subprocess`: Forces the cf push to be called from the OS as a sub-process rather than use the internal CF CLI Plugin Command architecture.  This makes the assumption that there will be a file named `cf` or `cf.exe` that can be found in the current working directory or in the System's PATH environment variable. This was introduced to work around a temporary breaking refactor change in the CF CLI plugin architecture where new features such as `--var` could not be directly used.
+ * `--push-as-subprocess`: Forces the cf push to be called from the OS as a sub-process rather than use the internal CF CLI Plugin Command architecture.  This makes the assumption that there will be a file named `cf` or `cf.exe` that can be found in the current working directory or in the System's PATH environment variable. The CF CLI release version should be at least 6.37+, which supports variable substitution. This was introduced to work around a temporary breaking refactor change in the CF CLI plugin architecture where new features such as `--var` could not be directly used.
 
 # services-manifest.yml sample
 ```
