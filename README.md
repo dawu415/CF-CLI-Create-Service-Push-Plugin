@@ -129,7 +129,7 @@ create-services:
 
 Variables can be specified via the parameter inputs `--var KEY=VALUE` and `--vars-file FULLPATH_FILENAME`, which sets a single variable or a specifies a file containing a set of variables that can be substituted into a services-manifest, respectively. Note that these flags do not get passed to cf push, unless `--push-as-subprocess` is specified.
 
-In addition to the above, 1.3.0 also allows environment variables to be substituted in. This is done via the flag `--use-env-vars-prefixed-with PREFIX`. This is limited by environment variables that have been created with some prefix, e.g. APPNAME can be a prefix that one sets in the environment variable such as APPNAME_APPNAME_configserverID and will be picked up the plugin.
+In addition to the above, 1.3.0 also allows environment variables to be substituted in. This is done via the flag `--use-env-vars-prefixed-with PREFIX`. This is limited by environment variables that have been created with some prefix, e.g. APPNAME can be a prefix that one sets in the environment variable such as APPNAME_configserverID and will be picked up the plugin.
 
 Sample services-manifest using enviroment variable
 ```
