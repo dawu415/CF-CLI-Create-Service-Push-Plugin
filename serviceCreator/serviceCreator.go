@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"code.cloudfoundry.org/cli/plugin"
 	"github.com/dawu415/CF-CLI-Create-Service-Push-Plugin/serviceManifest"
@@ -238,11 +237,10 @@ func (c *ServiceCreator) createService(name, broker, plan, JSONParam, tags strin
 	}
 
 	// Now wait for the service creation to complete.
-	// serviceCreationTimeout is in seconds waiting for service to complete
-	var serviceCreationTimeout = time.Duration(900) * time.Second
-	startTime := time.Now()
-
-	for time.Duration(time.Since(startTime)) <= serviceCreationTimeout {
+	// We wait 'infinitely' here because we don't know how long the service
+	// will take to complete. There exists some service brokers where
+	// provisioning requires user ticket approval input to complete.
+	for {
 		service, err := c.cf.GetService(name)
 		if err != nil {
 			return err
