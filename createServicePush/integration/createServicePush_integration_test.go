@@ -3,7 +3,7 @@ package createServicePush_integration_test
 import (
 	"os/exec"
 
-	"code.cloudfoundry.org/cli/plugin/models"
+	plugin_models "code.cloudfoundry.org/cli/plugin/models"
 
 	"code.cloudfoundry.org/cli/cf/util/testhelpers/rpcserver"
 	"code.cloudfoundry.org/cli/cf/util/testhelpers/rpcserver/rpcserverfakes"
@@ -139,7 +139,7 @@ var _ = Describe("CreateServicePush", func() {
 		Expect(string(session.Buffer().Contents()[:])).Should(ContainSubstring("--no-push applied"))
 	})
 
-	//!!NOTE: For this test to run and pass, you will need to set an enviroment variable, i.e., export CSPAPP_ENV=blah
+	//!!NOTE: For this test to run and pass, you will need to set an enviroment variable, i.e., export CSPAPP_ENV=sandbox
 	It("create service should run and create services from a valid local services-manifest that expects a local environment variable", func() {
 		args := []string{ts.Port(), "create-service-push", "--service-manifest", "services-manifest-env-variable.yml", "--no-push", "--use-env-vars-prefixed-with", "CSPAPP"}
 
