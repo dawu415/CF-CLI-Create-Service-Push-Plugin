@@ -1,0 +1,8 @@
+.DS_Store
+.vscode
+*.linux*
+*.osx*
+*.win*
+*.exe
+CF-CLI-Create-Service-Push-Plugin
+create_releases
