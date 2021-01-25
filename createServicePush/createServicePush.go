@@ -169,7 +169,7 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "create-service-push",
-				Alias:    "crsp",
+				Alias:    "cspush",
 				HelpText: "Works in the same manner as cf push, except that it will create services defined in a services-manifest.yml file first before performing a cf push.",
 
 				// UsageDetails is optional
