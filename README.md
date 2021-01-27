@@ -26,6 +26,10 @@ The create-service-push cli plugin supports the following optional parameters:
 
  * `--push-as-subprocess`: Forces the cf push to be called from the OS as a sub-process rather than use the internal CF CLI Plugin Command architecture.  This makes the assumption that there will be a file named `cf` or `cf.exe` that can be found in the current working directory or in the System's PATH environment variable. The CF CLI release version should be at least 6.37+, which supports variable substitution. This was introduced to work around a temporary breaking refactor change in the CF CLI plugin architecture where new features such as `--var` could not be directly used.
 
+ Note: Version 1.3.2 and above changes the alias from `csp` to `cspush`. This is because cf7 already uses csp for its create-space command.  However, should one still want to use cf6 and the old alias, they can simply include the CF_CLI_CSP=1 environment variable when installing the plugin. For example,
+
+  ```CF_CLI_CSP=1 cf install-plugin CF-CLI-Create-Service-Push-Plugin```
+
 # services-manifest.yml sample
 ```
 ---
