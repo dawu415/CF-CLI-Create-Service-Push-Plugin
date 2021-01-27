@@ -141,6 +141,13 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 	}
 }
 
+func (c *CreateServicePush) getAlias() string {
+	if value, exists := os.LookupEnv("CF_CLI_CSP"); value != "0" && exists {
+		return "csp"
+	}
+	return "cspush"
+}
+
 // GetMetadata must be implemented as part of the plugin interface
 // defined by the core CLI.
 //
@@ -154,6 +161,7 @@ func (c *CreateServicePush) Run(cliConnection plugin.CliConnection, args []strin
 // second field, HelpText, is used by the core CLI to display help information
 // to the user in the core commands `cf help`, `cf`, or `cf -h`.
 func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
+
 	return plugin.PluginMetadata{
 		Name: "Create-Service-Push",
 		Version: plugin.VersionType{
@@ -169,7 +177,7 @@ func (c *CreateServicePush) GetMetadata() plugin.PluginMetadata {
 		Commands: []plugin.Command{
 			{
 				Name:     "create-service-push",
-				Alias:    "cspush",
+				Alias:    c.getAlias(),
 				HelpText: "Works in the same manner as cf push, except that it will create services defined in a services-manifest.yml file first before performing a cf push.",
 
 				// UsageDetails is optional
